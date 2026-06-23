@@ -1,0 +1,41 @@
+{
+  "policy_id": "multi_source_result_weights_v1",
+  "last_updated": "2026-06-23",
+  "profiles": {
+    "official_500": {
+      "poisson": 45.0,
+      "500": 30.0,
+      "opta": 15.0,
+      "polymarket": 10.0
+    },
+    "fallback_500": {
+      "poisson": 50.0,
+      "500": 20.0,
+      "opta": 18.0,
+      "polymarket": 12.0
+    }
+  },
+  "controls": {
+    "500": {
+      "apply_deviation_discount": true
+    },
+    "opta": {
+      "default_quality": 1.0,
+      "apply_deviation_discount": false,
+      "minimum_weight": 0.08,
+      "maximum_weight": 0.18
+    },
+    "polymarket": {
+      "correlation_discount": 0.75,
+      "apply_deviation_discount": true,
+      "minimum_weight": 0.05,
+      "maximum_weight": 0.12
+    },
+    "gpt": {
+      "direct_probability_weight": 0.0
+    },
+    "qimen": {
+      "direct_probability_weight": 0.0
+    }
+  }
+}

@@ -1,0 +1,546 @@
+{
+  "rulebook_id": "decision_iteration_rules_v1",
+  "last_updated": "2026-06-16",
+  "purpose": "把赛后复盘经验转成赛前最终推荐前的透明校准层。该层不替代数学模型，只做小幅、可审计的概率和比分分层修正。",
+  "defaults": {
+    "max_single_probability_delta": 0.08,
+    "max_total_bucket_delta": 0.1,
+    "top_score_conservative_ranks": 2,
+    "risk_score_ranks": [
+      3,
+      4,
+      5
+    ]
+  },
+  "rules": {
+    "worldcup_group_opening": {
+      "description": "世界杯小组赛首轮更强调不败底线，强队方向保留，但深度和高总球默认降温。",
+      "conditions": [
+        "competition_type=world_cup",
+        "stage=group",
+        "round_index=1"
+      ],
+      "adjustments": {
+        "favorite_result_delta": -0.015,
+        "draw_delta": 0.025,
+        "underdog_delta": -0.01,
+        "handicap_cover_delta": -0.025,
+        "handicap_push_delta": 0.015,
+        "handicap_fail_delta": 0.01,
+        "move_total_from_3plus_to_1_2": 0.04
+      }
+    },
+    "host_opener_pressure": {
+      "description": "东道主揭幕战战意强，但心理压力和开局谨慎会提高一球小胜/平局保护。",
+      "conditions": [
+        "is_host=true",
+        "is_opening_match=true"
+      ],
+      "adjustments": {
+        "favorite_result_delta": -0.01,
+        "draw_delta": 0.01,
+        "handicap_cover_delta": -0.02,
+        "handicap_push_delta": 0.015,
+        "handicap_fail_delta": 0.005,
+        "prefer_scores": [
+          "1-0",
+          "2-0",
+          "2-1",
+          "1-1"
+        ]
+      }
+    },
+    "host_high_press_opening_upside": {
+      "description": "世界杯东道主首战若具备高压、转换速度和前场终结点，早段进球会抬高上沿；Top1/Top2仍保守，Top3-Top5必须放入3-0、3-1、4-1路径。",
+      "conditions": [
+        "competition_type=world_cup",
+        "stage=group",
+        "round_index=1",
+        "is_host=true",
+        "tags contains host_high_press"
+      ],
+      "adjustments": {
+        "favorite_result_delta": 0.015,
+        "handicap_cover_delta": 0.02,
+        "handicap_push_delta": -0.005,
+        "handicap_fail_delta": -0.015,
+        "move_total_from_1_2_to_4_5": 0.03,
+        "prefer_risk_scores": [
+          "3-0",
+          "3-1",
+          "4-1",
+          "4-0",
+          "2-1"
+        ]
+      }
+    },
+    "host_inexperienced_finishing_discount": {
+      "description": "东道主有热度和场面优势，但世界杯胜场经验、终结稳定性或核心缺阵不足时，主胜降温，平局和1-1保护上调。",
+      "conditions": [
+        "competition_type=world_cup",
+        "stage=group",
+        "round_index=1",
+        "is_host=true",
+        "tags contains host_inexperienced_finishing_risk"
+      ],
+      "adjustments": {
+        "favorite_result_delta": -0.025,
+        "draw_delta": 0.025,
+        "handicap_cover_delta": -0.02,
+        "handicap_push_delta": 0.01,
+        "handicap_fail_delta": 0.01,
+        "prefer_scores": [
+          "1-1",
+          "1-0",
+          "2-1",
+          "0-1"
+        ]
+      }
+    },
+    "set_piece_underdog_equalizer_risk": {
+      "description": "弱势方定位球威胁明显或强势方定位球防守不稳时，提高弱势方进球、平局和一球边界概率。",
+      "conditions": [
+        "tags contains set_piece_underdog_threat"
+      ],
+      "adjustments": {
+        "favorite_result_delta": -0.015,
+        "draw_delta": 0.015,
+        "handicap_cover_delta": -0.015,
+        "handicap_push_delta": 0.01,
+        "handicap_fail_delta": 0.005,
+        "prefer_scores": [
+          "1-1",
+          "2-1",
+          "1-0",
+          "0-1"
+        ],
+        "prefer_risk_scores": [
+          "1-2",
+          "2-2",
+          "2-1",
+          "1-1"
+        ]
+      }
+    },
+    "favorite_win_not_depth": {
+      "description": "强队胜面明显不等于让球方向成立；若LEG或让球层提示边界，降低深度结论。",
+      "conditions": [
+        "favorite_win_prob>=0.55",
+        "handicap_push_or_fail>=0.52"
+      ],
+      "adjustments": {
+        "handicap_cover_delta": -0.035,
+        "handicap_push_delta": 0.02,
+        "handicap_fail_delta": 0.015,
+        "prefer_scores": [
+          "1-0",
+          "2-0"
+        ]
+      }
+    },
+    "weak_handicap_depth": {
+      "description": "让球负端明显高，说明热门方赢深不成立。",
+      "conditions": [
+        "handicap_fail>=0.55"
+      ],
+      "adjustments": {
+        "handicap_cover_delta": -0.03,
+        "handicap_fail_delta": 0.03,
+        "prefer_scores": [
+          "1-1",
+          "1-0",
+          "0-1",
+          "0-0"
+        ]
+      }
+    },
+    "weather_suppresses_tempo": {
+      "description": "高温、雨战、高海拔、湿滑场地会压低节奏和连续冲刺质量。",
+      "conditions": [
+        "weather_suppression=true"
+      ],
+      "adjustments": {
+        "move_total_from_3plus_to_1_2": 0.05,
+        "boost_low_score_scores": [
+          "0-0",
+          "1-0",
+          "1-1",
+          "2-0",
+          "0-1"
+        ]
+      }
+    },
+    "material_absence_uncertain_lineup": {
+      "description": "关键位置伤缺或首发不确定时，降低该队单向结果和深度置信。",
+      "conditions": [
+        "material_absence=true"
+      ],
+      "adjustments": {
+        "affected_team_result_delta": -0.025,
+        "opposition_result_delta": 0.01,
+        "draw_delta": 0.015,
+        "affected_handicap_cover_delta": -0.02,
+        "affected_handicap_fail_delta": 0.02
+      }
+    },
+    "balanced_direct_match": {
+      "description": "小组直接竞争场，双方都能接受不败时，提高平局和低总球权重。",
+      "conditions": [
+        "group_direct_rivalry=true",
+        "favorite_edge<=0.12"
+      ],
+      "adjustments": {
+        "favorite_result_delta": -0.015,
+        "draw_delta": 0.025,
+        "underdog_delta": -0.01,
+        "move_total_from_3plus_to_1_2": 0.035,
+        "prefer_scores": [
+          "1-1",
+          "1-0",
+          "0-1",
+          "0-0",
+          "2-1"
+        ]
+      }
+    },
+    "qimen_conflict_low_weight": {
+      "description": "奇门与数据模型冲突时，只作为风险提示，小幅降低主观置信，不覆盖模型。",
+      "conditions": [
+        "qimen_conflict=true"
+      ],
+      "adjustments": {
+        "favorite_result_delta": -0.005,
+        "draw_delta": 0.003,
+        "underdog_delta": 0.002
+      }
+    },
+    "ordinary_friendly_low_tempo_guard": {
+      "description": "普通国际赛若首发和情报不足、波动偏高且没有强队演练触发，优先保护低节奏路径。",
+      "conditions": [
+        "competition_type=international_friendly",
+        "lineup_uncertainty=true",
+        "high_scoring_risk<=0.15",
+        "favorite_cover_trigger=false",
+        "volatility_score>=0.62"
+      ],
+      "adjustments": {
+        "move_total_from_3plus_to_1_2": 0.05,
+        "boost_low_score_scores": [
+          "0-0",
+          "1-0",
+          "1-1",
+          "2-0",
+          "0-1"
+        ]
+      }
+    },
+    "favorite_late_collapse_upside": {
+      "description": "强队优势大且让球较深时，Top3-Top5必须保留弱队后段体能、防线或纪律崩盘造成的上沿比分。",
+      "conditions": [
+        "favorite_win_prob>=0.68",
+        "abs(handicap_line)>=1.75",
+        "high_scoring_risk>=0.12 or total_4plus>=0.22 or favorite_cover_trigger=true"
+      ],
+      "adjustments": {
+        "move_total_from_1_2_to_4_5": 0.025,
+        "prefer_risk_scores": [
+          "3-1",
+          "4-0",
+          "4-1",
+          "3-0",
+          "2-1",
+          "1-3",
+          "0-4",
+          "1-4"
+        ]
+      }
+    },
+    "worldcup_massive_favorite_blowout_override": {
+      "description": "世界杯小组首轮若强弱差极大、总球上沿已不低且弱势方抗压风险明显，首轮降温不得压死强队连续进球路径；Top3-Top6必须保留4球以上比分。",
+      "conditions": [
+        "competition_type=world_cup",
+        "stage=group",
+        "round_index=1",
+        "favorite_win_prob>=0.78",
+        "abs(handicap_line)>=2.5",
+        "high_scoring_risk>=0.18 or total_4plus>=0.30 or tags contains massive_favorite_depth"
+      ],
+      "adjustments": {
+        "favorite_result_delta": 0.015,
+        "handicap_cover_delta": 0.035,
+        "handicap_push_delta": -0.005,
+        "handicap_fail_delta": -0.03,
+        "move_total_from_1_2_to_4_5": 0.05,
+        "prefer_risk_scores": [
+          "4-0",
+          "5-0",
+          "5-1",
+          "6-1",
+          "4-1",
+          "3-0",
+          "0-4",
+          "0-5",
+          "1-5",
+          "1-6",
+          "1-4",
+          "0-3"
+        ]
+      }
+    },
+    "worldcup_transition_2_2_guard": {
+      "description": "世界杯强队略优但对手具备高纪律转换、定位球或追分能力时，不能只保护1-1；2-2必须进入比分保护池和总球上沿检查。",
+      "conditions": [
+        "competition_type=world_cup",
+        "stage=group",
+        "round_index=1",
+        "favorite_win_prob>=0.40",
+        "favorite_win_prob<=0.62",
+        "tags contains organized_transition_underdog or tags contains set_piece_underdog_threat or tags contains comeback_equalizer_risk"
+      ],
+      "adjustments": {
+        "favorite_result_delta": -0.01,
+        "draw_delta": 0.015,
+        "underdog_delta": -0.005,
+        "move_total_from_1_2_to_4_5": 0.02,
+        "prefer_scores": [
+          "1-1",
+          "2-2",
+          "2-1",
+          "1-2"
+        ],
+        "prefer_risk_scores": [
+          "2-2",
+          "3-2",
+          "2-3",
+          "3-1",
+          "1-3"
+        ]
+      }
+    },
+    "cold_low_score_near_top_promote": {
+      "description": "若冷门低比分本身概率接近主线Top3，不能只放冷门栏；必须进入主线保护或明确列为优先防线。",
+      "conditions": [
+        "tags contains cold_low_score_near_top",
+        "favorite_edge<=0.18"
+      ],
+      "adjustments": {
+        "favorite_result_delta": -0.015,
+        "draw_delta": 0.01,
+        "underdog_delta": 0.005,
+        "prefer_scores": [
+          "1-0",
+          "0-1",
+          "1-1",
+          "0-0"
+        ],
+        "boost_low_score_scores": [
+          "1-0",
+          "0-1",
+          "1-1",
+          "0-0"
+        ]
+      }
+    },
+    "worldcup_group_opening_favorite_heat_discount": {
+      "description": "世界杯小组首轮热门方容易被高估；当胜面不低但让球层偏保护时，降低三向主胜/客胜，抬高平局和弱势方韧性。",
+      "conditions": [
+        "competition_type=world_cup",
+        "stage=group",
+        "round_index=1",
+        "favorite_win_prob>=0.50",
+        "handicap_push_or_fail>=0.48"
+      ],
+      "adjustments": {
+        "favorite_result_delta": -0.025,
+        "draw_delta": 0.02,
+        "underdog_delta": 0.005,
+        "handicap_cover_delta": -0.02,
+        "handicap_push_delta": 0.01,
+        "handicap_fail_delta": 0.01,
+        "prefer_scores": [
+          "1-1",
+          "0-0",
+          "1-0",
+          "0-1",
+          "2-1"
+        ],
+        "boost_low_score_scores": [
+          "0-0",
+          "1-1",
+          "1-0",
+          "0-1"
+        ]
+      }
+    },
+    "worldcup_group_draw_wave_guard": {
+      "description": "世界杯小组首轮连续出现平局时，强队方向不能只口头防平，必须把0-0、1-1、2-2放入比分保护池，并小幅提高平局。",
+      "conditions": [
+        "competition_type=world_cup",
+        "stage=group",
+        "round_index=1",
+        "tags contains group_draw_wave"
+      ],
+      "adjustments": {
+        "favorite_result_delta": -0.02,
+        "draw_delta": 0.025,
+        "underdog_delta": -0.005,
+        "handicap_cover_delta": -0.015,
+        "handicap_push_delta": 0.005,
+        "handicap_fail_delta": 0.01,
+        "move_total_from_3plus_to_1_2": 0.025,
+        "prefer_scores": [
+          "1-1",
+          "0-0",
+          "2-2",
+          "1-0",
+          "0-1"
+        ],
+        "boost_low_score_scores": [
+          "0-0",
+          "1-1"
+        ],
+        "prefer_risk_scores": [
+          "2-2"
+        ]
+      }
+    },
+    "favorite_rotation_low_block_depth_discount": {
+      "description": "强队胜面很高但存在轮换、爆点替补、对手低位纪律或门将状态强时，不得直接推深度；0-0、1-0、2-0必须进入保护池。",
+      "conditions": [
+        "competition_type=world_cup",
+        "stage=group",
+        "round_index=1",
+        "favorite_win_prob>=0.65",
+        "tags contains favorite_rotation_risk or tags contains low_block_opponent or tags contains elite_goalkeeper_risk"
+      ],
+      "adjustments": {
+        "favorite_result_delta": -0.025,
+        "draw_delta": 0.02,
+        "underdog_delta": 0.005,
+        "handicap_cover_delta": -0.03,
+        "handicap_push_delta": 0.015,
+        "handicap_fail_delta": 0.015,
+        "move_total_from_3plus_to_1_2": 0.045,
+        "prefer_scores": [
+          "1-0",
+          "2-0",
+          "1-1",
+          "0-0"
+        ],
+        "boost_low_score_scores": [
+          "0-0",
+          "1-0",
+          "1-1",
+          "2-0"
+        ]
+      }
+    },
+    "plus_one_underdog_cover_guard": {
+      "description": "受让+1方若有天气、旅程、低位韧性或弱势方先进球路径，必须提高让胜保护，避免只写让平/让负。",
+      "conditions": [
+        "abs(handicap_line)=1",
+        "tags contains plus_one_cover_risk or tags contains travel_disruption or tags contains low_block_opponent"
+      ],
+      "adjustments": {
+        "handicap_cover_delta": 0.035,
+        "handicap_push_delta": 0.005,
+        "handicap_fail_delta": -0.04,
+        "prefer_scores": [
+          "1-1",
+          "0-0",
+          "1-0",
+          "0-1"
+        ],
+        "boost_low_score_scores": [
+          "0-0",
+          "1-1"
+        ]
+      }
+    },
+    "worldcup_handicap_over_result_preference": {
+      "description": "世界杯小组首轮让球保护层往往比三向Top1更稳；当让球保护与三向热门冲突时，降低热门三向置信。",
+      "conditions": [
+        "competition_type=world_cup",
+        "stage=group",
+        "round_index=1",
+        "handicap_push_or_fail>=0.55"
+      ],
+      "adjustments": {
+        "favorite_result_delta": -0.015,
+        "draw_delta": 0.01,
+        "underdog_delta": 0.005,
+        "handicap_cover_delta": -0.015,
+        "handicap_push_delta": 0.005,
+        "handicap_fail_delta": 0.01,
+        "prefer_scores": [
+          "1-1",
+          "1-0",
+          "0-1",
+          "0-0"
+        ]
+      }
+    },
+    "top_table_stalemate_guard": {
+      "description": "榜首/强强直接对话若对手防守强或平局权重高，必须提高0-0、1-1保护，避免只按主表优势推热门。",
+      "conditions": [
+        "tags contains top_table_direct_rival or tags contains strong_defense_opponent",
+        "favorite_win_prob<=0.58",
+        "favorite_edge<=0.25"
+      ],
+      "adjustments": {
+        "favorite_result_delta": -0.02,
+        "draw_delta": 0.03,
+        "underdog_delta": -0.01,
+        "move_total_from_3plus_to_1_2": 0.04,
+        "prefer_scores": [
+          "0-0",
+          "1-1",
+          "1-0",
+          "0-1"
+        ],
+        "boost_low_score_scores": [
+          "0-0",
+          "1-1"
+        ]
+      }
+    },
+    "away_depth_undervalued": {
+      "description": "客队方向与市场数字一致且主队防线失球样本偏高时，模型常低估客队赢深；Top3-Top5需补0-2、0-3、1-3。",
+      "conditions": [
+        "favorite_side=away",
+        "tags contains away_depth_upside or tags contains home_defensive_leak"
+      ],
+      "adjustments": {
+        "favorite_result_delta": 0.01,
+        "handicap_cover_delta": -0.02,
+        "handicap_push_delta": 0.005,
+        "handicap_fail_delta": 0.015,
+        "move_total_from_1_2_to_4_5": 0.02,
+        "prefer_risk_scores": [
+          "0-2",
+          "0-3",
+          "1-3",
+          "1-2",
+          "2-5"
+        ]
+      }
+    },
+    "open_league_high_score_upside": {
+      "description": "开放型联赛或双方失球偏高时，Top1/Top2可保守，但Top4-Top6必须保留4球以上上沿路径。",
+      "conditions": [
+        "tags contains open_league_high_variance or high_scoring_risk>=0.22"
+      ],
+      "adjustments": {
+        "move_total_from_1_2_to_4_5": 0.03,
+        "prefer_risk_scores": [
+          "2-3",
+          "3-2",
+          "2-4",
+          "4-2",
+          "2-5",
+          "3-3"
+        ]
+      }
+    }
+  }
+}

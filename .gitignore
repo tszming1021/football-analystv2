@@ -1,0 +1,61 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
+.claude/
+*~
+
+# Local project memory (kept on the workstation, not published)
+CURRENT_CONTEXT.md
+PROJECT_CONTEXT.md
+CONTEXT_HANDOFF.md
+CONTEXT_SNAPSHOT*.md
+archive/
+
+# Generated reports, extracts and transient inputs
+output/
+tmp/
+reports/
+*.sqlite3
+500_trade_supplement_local.json
+complete_parsed_data.json
+deep_data_*.json
+
+# Runtime data. Only stable policies and documentation are public.
+data/*
+!data/README.md
+!data/calibration/
+data/calibration/*
+!data/calibration/decision_iteration_rules.json
+!data/calibration/multi_source_weight_policy.json
+
+# Raw documents and media should live outside the repository.
+*.pdf
+*.xls
+*.xlsx
+*.csv
+*.mp3
+*.wav
+*.mp4
+*.mov
+

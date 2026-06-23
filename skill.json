@@ -1,0 +1,74 @@
+{
+  "name": "football-analyst",
+  "version": "5.3.0",
+  "description": "中国竞彩足球分析工具：500彩票网竞彩与深层赔率主源、API-Football、外部赔率、天气、赔率历史、泊松模型、凯利公式、奇门辅助和AI二次复核报告。",
+  "author": "football-analyst-skill contributors",
+  "license": "MIT",
+  "min_api_version": "v3",
+  "requirements": {
+    "python": ">=3.9",
+    "dependencies": [
+      "requests>=2.28.0",
+      "beautifulsoup4>=4.12.0",
+      "pandas>=2.0.0",
+      "pypdf>=4.0.0",
+      "xlrd==2.0.1"
+    ]
+  },
+  "entrypoints": {
+    "main": "python3 new_main.py --match '主队 vs 客队'",
+    "interactive": "python3 new_main.py --interactive",
+    "review": "python3 review_cli.py summary",
+    "worldcup": "python3 worldcup_predictor.py Argentina France --season 2026"
+  },
+  "data_sources": {
+    "primary": [
+      "500彩票网"
+    ],
+    "supplemental": [
+      "API-Football",
+      "Open-Meteo",
+      "ClubElo",
+      "football-data.co.uk",
+      "TheSportsDB",
+      "Odds-API.io",
+      "The Odds API",
+      "FootballData.io FIFA Rankings",
+      "Sportmonks",
+      "AnySport",
+      "FBref"
+    ]
+  },
+  "features": [
+    "中国竞彩盘口和赔率抓取",
+    "500同期开奖导航反查fixture id",
+    "500百家欧赔、亚盘对比、让球指数和比分指数抓取",
+    "凯利分歧度、水位分歧度和比分市场缺口提示",
+    "球队近况、主客场拆分和交锋数据",
+    "API-Football赛程、排名、伤停、首发补充",
+    "TheSportsDB免费事件、场地和赛果补充",
+    "Odds-API.io和The Odds API外部赔率交叉验证",
+    "联网搜索伤停、首发、轮换、发布会、赔率动向和天气场地证据",
+    "Open-Meteo天气和比赛地时区换算",
+    "赔率历史快照和收盘线观察",
+    "初始/即时赔率变化分析",
+    "泊松分布比分和胜平负概率",
+    "市场信号、比赛语境、让球穿盘和大小球独立模型",
+    "集成证据评分和串关风控",
+    "大模型结合联网搜索证据进行AI二次复核",
+    "支持本机Codex CLI自动复核或生成Agent Prompt",
+    "多场串关相关性风险控制",
+    "赛后复盘记录和错误归因统计",
+    "凯利公式和EV分析",
+    "奇门遁甲辅助局像、胜平负和比分",
+    "标准化单场报告和多场汇总"
+  ],
+  "documentation": {
+    "readme": "README.md",
+    "main_script": "new_main.py",
+    "review_script": "review_cli.py",
+    "worldcup_script": "worldcup_predictor.py",
+    "standard_template": "report_template_jingcai_qimen.md"
+  },
+  "disclaimer": "本工具仅供学习和研究使用，不构成任何投注建议。体育博彩存在风险，请遵守当地法律法规。"
+}
