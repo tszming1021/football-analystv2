@@ -5,6 +5,9 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL } from "./lib/supabase/config";
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
   const client = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: {
+      fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal: AbortSignal.timeout(6_000) })
+    },
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -17,7 +20,11 @@ export async function middleware(request: NextRequest) {
     }
   });
 
-  await client.auth.getUser();
+  try {
+    await client.auth.getUser();
+  } catch {
+    // Public pages must remain available when auth is temporarily unreachable.
+  }
   return response;
 }
 

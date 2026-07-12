@@ -6,6 +6,9 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL } from "./config";
 export async function getServerClient() {
   const cookieStore = await cookies();
   return createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: {
+      fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal: AbortSignal.timeout(6_000) })
+    },
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -24,8 +27,12 @@ export async function getServerClient() {
 export async function getCurrentUser() {
   const client = await getServerClient();
   if (!client) return null;
-  const { data } = await client.auth.getUser();
-  return data.user;
+  try {
+    const { data } = await client.auth.getUser();
+    return data.user;
+  } catch {
+    return null;
+  }
 }
 
 export async function canViewMatch(fixturePageId: string, firstMatchId: string | undefined) {
