@@ -56,7 +56,6 @@ function parseMatches(html: string) {
     if (isEnd) ended += 1;
     if (isEnd) continue;
     const next = html.slice((rows[index].index || 0) + rows[index][0].length, rows[index + 1]?.index || html.length);
-    const more = next.match(/<tr\b[^>]*class=["'][^"']*bet-more-wrap[^"']*["'][^>]*>([\s\S]*?)<\/tr>/i)?.[1] || "";
     const match: MatchItem = {
       match_num: attr(attrs, "data-matchnum"),
       fixture_page_id: attr(attrs, "data-fixtureid"),
@@ -76,9 +75,9 @@ function parseMatches(html: string) {
       },
       one_x_two: priceMap(body, "nspf"),
       handicap_three_way: priceMap(body, "spf"),
-      half_full: priceMap(more, "bqc"),
-      scores: renameScores(priceMap(more, "bf")),
-      total_exact: priceMap(more, "jqs")
+      half_full: priceMap(next, "bqc"),
+      scores: renameScores(priceMap(next, "bf")),
+      total_exact: priceMap(next, "jqs")
     };
     matches.push(match);
   }
