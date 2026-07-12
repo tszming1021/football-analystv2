@@ -175,6 +175,9 @@ h1 span {
 .auth-tab.active { background: var(--surface); color: var(--accent); box-shadow: 0 2px 6px rgba(34, 43, 36, 0.1); }
 .auth-form { display: grid; gap: 10px; margin-top: 22px; }
 .auth-form label { color: var(--muted); font-size: 13px; font-weight: 760; }
+.field-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.field-link { color: var(--accent); font-size: 12px; font-weight: 760; text-decoration: none; }
+.field-link:hover { text-decoration: underline; }
 .captcha-block { display: grid; gap: 10px; }
 .captcha-row { display: flex; align-items: center; gap: 8px; }
 .captcha-code { display: grid; min-height: 42px; flex: 1; place-items: center; border: 1px dashed var(--accent); border-radius: 8px; background: var(--surface-2); color: var(--ink); font-size: 21px; font-weight: 900; letter-spacing: 5px; }
@@ -184,6 +187,8 @@ h1 span {
 .input-wrap input, .code-input { width: 100%; min-height: 42px; border: 1px solid var(--line); border-radius: 8px; padding: 0 12px; color: var(--ink); font: inherit; outline: none; }
 .input-wrap input { min-height: 40px; border: 0; padding: 0; }
 .input-wrap:focus-within, .code-input:focus { border-color: var(--accent); }
+.password-toggle { display: grid; width: 30px; height: 30px; flex: 0 0 30px; place-items: center; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; }
+.password-toggle:hover { background: var(--surface-2); color: var(--accent); }
 .auth-message { display: flex; align-items: flex-start; gap: 7px; color: var(--accent); }
 .locked-panel { display: grid; justify-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); box-shadow: var(--shadow); padding: 64px 24px; text-align: center; }
 .locked-panel > svg { color: var(--warning); }
