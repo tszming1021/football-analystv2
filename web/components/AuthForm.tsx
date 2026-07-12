@@ -2,26 +2,21 @@
 
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, KeyRound, Mail, RefreshCw, ShieldCheck } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getBrowserClient } from "../lib/supabase/browser";
 
-export function AuthForm({ initialMode = "login" }: { initialMode?: "login" | "register" }) {
+export function AuthForm({ initialMode = "login", initialCaptcha = "" }: { initialMode?: "login" | "register"; initialCaptcha?: string }) {
   const router = useRouter();
   const client = getBrowserClient();
   const [email, setEmail] = useState("");
   const [mode] = useState<"login" | "register">(initialMode);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [captcha, setCaptcha] = useState("");
+  const [captcha, setCaptcha] = useState(initialCaptcha);
   const [captchaInput, setCaptchaInput] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    if (mode === "register") setCaptcha(createCaptcha());
-    setCaptchaInput("");
-  }, [mode]);
 
   async function submitCredentials(event: FormEvent) {
     event.preventDefault();

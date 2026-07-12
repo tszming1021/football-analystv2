@@ -169,9 +169,10 @@ h1 span {
 .auth-title h1 { font-size: 26px; }
 .auth-icon { display: grid; width: 46px; height: 46px; place-items: center; border-radius: 8px; background: var(--surface-2); color: var(--accent); }
 .auth-copy, .auth-message { color: var(--muted); font-size: 14px; line-height: 1.7; }
-.auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 22px; padding: 4px; border-radius: 8px; background: var(--surface-2); }
-.auth-tab { min-height: 36px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; font: inherit; font-size: 14px; font-weight: 800; }
-.auth-tab.active { background: var(--surface); color: var(--accent); box-shadow: 0 1px 3px rgba(34, 43, 36, 0.08); }
+.auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 22px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
+.auth-tab { display: grid; min-height: 40px; place-items: center; border-radius: 7px; color: var(--muted); cursor: pointer; font: inherit; font-size: 14px; font-weight: 800; text-decoration: none; transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease; }
+.auth-tab:hover { color: var(--accent); }
+.auth-tab.active { background: var(--surface); color: var(--accent); box-shadow: 0 2px 6px rgba(34, 43, 36, 0.1); }
 .auth-form { display: grid; gap: 10px; margin-top: 22px; }
 .auth-form label { color: var(--muted); font-size: 13px; font-weight: 760; }
 .captcha-block { display: grid; gap: 10px; }
