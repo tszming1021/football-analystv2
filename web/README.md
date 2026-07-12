@@ -49,26 +49,15 @@ web/data/current_matches.json
 
 ## 自动定时抓取
 
-Vercel Cron 配置在：
+Vercel Hobby 免费版的 Cron 只能每天执行一次，因此本项目使用 GitHub Actions 免费定时调用抓取接口：每天北京时间 12:00 和 18:00 各执行一次（GitHub Actions 使用 UTC 时间）。
+
+在 GitHub 仓库的 `Settings -> Secrets and variables -> Actions` 添加 `CRON_SECRET`，并在 Vercel 项目环境变量中添加相同的 `CRON_SECRET`。添加后重新部署一次。也可以在 Actions 页面手动运行 `Fetch football matches` 验证。
+
+定时配置在：
 
 ```text
-web/vercel.json
+.github/workflows/fetch-matches.yml
 ```
-
-当前配置：
-
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/fetch-matches",
-      "schedule": "0 4 * * *"
-    }
-  ]
-}
-```
-
-Vercel Cron 使用 UTC 时间，`0 4 * * *` 对应北京时间每天 12:00。
 
 本地测试定时接口：
 

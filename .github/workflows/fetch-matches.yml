@@ -1,0 +1,21 @@
+name: Fetch football matches
+
+on:
+  schedule:
+    # GitHub Actions uses UTC: 04:00 and 10:00 UTC = 12:00 and 18:00 Asia/Shanghai.
+    - cron: "0 4 * * *"
+    - cron: "0 10 * * *"
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refresh matches and generate reports
+        env:
+          SITE_URL: https://football-analystv21.vercel.app
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail-with-body --max-time 120 \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${SITE_URL}/api/cron/fetch-matches"
