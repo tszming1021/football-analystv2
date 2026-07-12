@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, KeyRound, Mail, ShieldCheck } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { ArrowLeft, CheckCircle2, KeyRound, Mail, RefreshCw, ShieldCheck } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getBrowserClient } from "../lib/supabase/browser";
 
@@ -11,17 +11,20 @@ export function AuthForm() {
   const client = getBrowserClient();
   const [email, setEmail] = useState("");
   const [mode, setMode] = useState<"login" | "register">("login");
-  const [token, setToken] = useState("");
-  const [awaitingVerification, setAwaitingVerification] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [captcha, setCaptcha] = useState("");
+  const [captchaInput, setCaptchaInput] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    if (mode === "register") setCaptcha(createCaptcha());
+    setCaptchaInput("");
+  }, [mode]);
+
   function selectMode(nextMode: "login" | "register") {
     setMode(nextMode);
-    setAwaitingVerification(false);
-    setToken("");
     setMessage("");
   }
 
@@ -35,6 +38,13 @@ export function AuthForm() {
       setMessage("两次输入的密码不一致。");
       return;
     }
+    if (mode === "register" && captchaInput.trim().toLowerCase() !== captcha.toLowerCase()) {
+      setBusy(false);
+      setMessage("验证码不正确，请重新输入。");
+      setCaptcha(createCaptcha());
+      setCaptchaInput("");
+      return;
+    }
 
     const result = mode === "login"
       ? await client.auth.signInWithPassword({ email: normalizedEmail, password })
@@ -42,24 +52,8 @@ export function AuthForm() {
     setBusy(false);
     if (result.error) { setMessage(formatAuthError(result.error.message, mode)); return; }
 
-    if (mode === "register" && !result.data.session) {
-      setAwaitingVerification(true);
-      setMessage("注册验证码已发送，请检查邮箱（包括垃圾邮件）。");
-      return;
-    }
-
     router.push("/");
     router.refresh();
-  }
-
-  async function verifyCode(event: FormEvent) {
-    event.preventDefault();
-    if (!client) return;
-    setBusy(true); setMessage("");
-    const { error } = await client.auth.verifyOtp({ email: email.trim(), token: token.trim(), type: "signup" });
-    setBusy(false);
-    if (error) { setMessage("验证码不正确或已过期，请重新注册。"); return; }
-    router.push("/"); router.refresh();
   }
 
   return (
@@ -72,27 +66,23 @@ export function AuthForm() {
           <button type="button" className={mode === "login" ? "auth-tab active" : "auth-tab"} onClick={() => selectMode("login")}>登录</button>
           <button type="button" className={mode === "register" ? "auth-tab active" : "auth-tab"} onClick={() => selectMode("register")}>注册</button>
         </div>
-        {!awaitingVerification ? (
-          <form onSubmit={submitCredentials} className="auth-form">
+        <form onSubmit={submitCredentials} className="auth-form">
             <label htmlFor="email">邮箱地址</label>
             <div className="input-wrap"><Mail size={18} /><input id="email" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@example.com" /></div>
             <label htmlFor="password">{mode === "login" ? "登录密码" : "设置密码"}</label>
             <div className="input-wrap"><KeyRound size={18} /><input id="password" type="password" required minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="至少 6 位" /></div>
             {mode === "register" && <><label htmlFor="confirm-password">确认密码</label><div className="input-wrap"><KeyRound size={18} /><input id="confirm-password" type="password" required minLength={6} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="再次输入密码" /></div></>}
-            <button className="primary-button" disabled={busy}>{busy ? "处理中..." : mode === "login" ? "登录" : "注册并发送验证码"}</button>
-          </form>
-        ) : (
-          <form onSubmit={verifyCode} className="auth-form">
-            <label htmlFor="token">邮箱验证码</label>
-            <input id="token" className="code-input" inputMode="numeric" autoComplete="one-time-code" required maxLength={8} value={token} onChange={(event) => setToken(event.target.value)} placeholder="输入验证码" />
-            <button className="primary-button" disabled={busy}>{busy ? "验证中..." : "验证并登录"}</button>
-            <button type="button" className="text-button" onClick={() => { setAwaitingVerification(false); setToken(""); }}>返回注册</button>
-          </form>
-        )}
+            {mode === "register" && <div className="captcha-block"><label htmlFor="captcha">随机验证码</label><div className="captcha-row"><span className="captcha-code" aria-label="随机验证码">{captcha || "加载中"}</span><button type="button" className="captcha-refresh" onClick={() => { setCaptcha(createCaptcha()); setCaptchaInput(""); }} title="换一个验证码" aria-label="换一个验证码"><RefreshCw size={17} /></button></div><input id="captcha" className="code-input" required value={captchaInput} onChange={(event) => setCaptchaInput(event.target.value)} placeholder="输入上面的验证码" autoComplete="off" /></div>}
+            <button className="primary-button" disabled={busy}>{busy ? "处理中..." : mode === "login" ? "登录" : "注册"}</button>
+        </form>
         {message && <p className="auth-message"><CheckCircle2 size={16} />{message}</p>}
       </div>
     </main>
   );
+}
+
+function createCaptcha() {
+  return String(Math.floor(1000 + Math.random() * 9000));
 }
 
 function formatAuthError(error: string, mode: "login" | "register") {
