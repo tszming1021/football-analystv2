@@ -14,6 +14,7 @@ export type RefreshResult = {
 export async function refreshMatchData(): Promise<RefreshResult> {
   const html = await fetch500(TRADE_URL);
   const { matches, counts } = parseMatches(html);
+  await enrichDeepMarkets(matches);
   const payload: MatchPayload = {
     fetched_at: new Date().toISOString(),
     source_url: TRADE_URL,
@@ -23,6 +24,53 @@ export async function refreshMatchData(): Promise<RefreshResult> {
   };
   const persistence = await persistPayload(payload);
   return { payload, stdout: "", stderr: "", persistence };
+}
+
+async function enrichDeepMarkets(matches: MatchItem[]) {
+  for (let index = 0; index < matches.length; index += 4) {
+    const batch = matches.slice(index, index + 4);
+    await Promise.all(batch.map(async (match) => {
+      const [ouzhi, yazhi, daxiao] = await Promise.all([
+        fetchDeepMarket("ouzhi", match.fixture_page_id),
+        fetchDeepMarket("yazhi", match.fixture_page_id),
+        fetchDeepMarket("daxiao", match.fixture_page_id)
+      ]);
+      const deep_market = { ouzhi, yazhi, daxiao };
+      if (ouzhi || yazhi || daxiao) match.deep_market = deep_market;
+    }));
+  }
+}
+
+async function fetchDeepMarket(kind: "ouzhi" | "yazhi" | "daxiao", fixturePageId: string) {
+  const url = `https://odds.500.com/fenxi/${kind}-${fixturePageId}.shtml`;
+  try {
+    const html = await fetch500(url);
+    const values = extractAverageValues(html);
+    if (values.length < 6) return undefined;
+    return {
+      url,
+      opening: values.slice(0, 3),
+      current: values.slice(3, 6)
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+function extractAverageValues(html: string) {
+  const start = html.indexOf(">平均值</td>");
+  if (start < 0) return [];
+  const nextFooter = html.indexOf('<tr xls="footer">', start + 1);
+  const block = html.slice(start, nextFooter > 0 ? nextFooter : start + 12000);
+  const values: number[] = [];
+  const cells = block.matchAll(/<td\b[^>]*row=["']1["'][^>]*>([\s\S]*?)<\/td>/gi);
+  for (const cell of cells) {
+    const text = cell[1].replace(/<[^>]+>/g, "").replace(/&nbsp;/g, "").trim();
+    const value = Number(text);
+    if (text && Number.isFinite(value)) values.push(value);
+    if (values.length === 6) break;
+  }
+  return values;
 }
 
 async function fetch500(url: string) {
