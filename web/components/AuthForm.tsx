@@ -48,6 +48,11 @@ export function AuthForm({ initialMode = "login", initialCaptcha = "" }: { initi
     setBusy(false);
     if (result.error) { setMessage(formatAuthError(result.error.message, mode)); return; }
 
+    if (mode === "register" && !result.data.session) {
+      setMessage("注册已完成，但 Supabase 仍要求确认邮箱。请管理员关闭 Confirm email 后再登录。 ");
+      return;
+    }
+
     router.push("/");
     router.refresh();
   }
@@ -85,6 +90,7 @@ function createCaptcha(previous = "") {
 
 function formatAuthError(error: string, mode: "login" | "register") {
   if (error.toLowerCase().includes("invalid login credentials")) return "邮箱或密码不正确。";
+  if (error.toLowerCase().includes("email not confirmed")) return "邮箱尚未确认，请先在 Supabase 关闭 Confirm email，或完成邮箱确认。";
   if (error.toLowerCase().includes("user already registered")) return "该邮箱已经注册，请切换到登录。";
   if (error.toLowerCase().includes("email address not authorized")) return "当前 Supabase 邮件服务只允许项目成员邮箱，请先使用项目所有者邮箱测试。";
   return mode === "register" ? `注册失败：${error}` : `登录失败：${error}`;
