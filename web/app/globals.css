@@ -194,6 +194,9 @@ h1 span {
 .locked-panel > svg { color: var(--warning); }
 .locked-panel p { max-width: 520px; margin: 0; color: var(--muted); line-height: 1.7; }
 .contact-note { color: var(--accent-2) !important; font-weight: 760; }
+.admin-contact { display: grid; justify-items: center; gap: 8px; margin-top: 8px; padding-top: 18px; border-top: 1px solid var(--line); }
+.admin-contact p { color: var(--muted) !important; font-size: 13px; font-weight: 760; }
+.admin-contact img { display: block; width: min(190px, 72vw); aspect-ratio: 1; border: 1px solid var(--line); border-radius: 8px; object-fit: cover; }
 
 .spin {
   animation: spin 1s linear infinite;

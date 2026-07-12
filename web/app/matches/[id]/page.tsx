@@ -99,6 +99,10 @@ function LockedMatch({ match, authenticated }: { match: { match_num: string; lea
         <h2>{authenticated ? "这场比赛暂未开通" : "请先注册或登录"}</h2>
         <p>{authenticated ? "当前账号已开放第一场比赛，其他比赛需要管理员授权。" : "注册后可查看第一场比赛的完整分析，其他比赛需要管理员授权。"}</p>
         {authenticated ? <p className="contact-note">请联系管理员开通本场比赛权限。</p> : <Link href="/login" className="primary-button">邮箱注册 / 登录</Link>}
+        <div className="admin-contact">
+          <p>添加管理员 QQ 申请开通</p>
+          <img src="/admin-qq-qr.jpg" alt="管理员 QQ 二维码" />
+        </div>
       </section>
     </main>
   );
