@@ -1,12 +1,28 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { createClient } from "@supabase/supabase-js";
+import { SUPABASE_URL } from "./supabase/config";
 import type { ImpliedProbability, MatchItem, MatchPayload, OddsMap } from "./types";
 
 const DATA_PATH = path.join(process.cwd(), "data", "current_matches.json");
 
 export async function getPayload(): Promise<MatchPayload> {
+  const databasePayload = await getLatestDatabasePayload();
+  if (databasePayload) return databasePayload;
   const raw = await fs.readFile(DATA_PATH, "utf-8");
   return JSON.parse(raw) as MatchPayload;
+}
+
+async function getLatestDatabasePayload(): Promise<MatchPayload | null> {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) return null;
+  const client = createClient(SUPABASE_URL, key, { auth: { autoRefreshToken: false, persistSession: false } });
+  const { data: run } = await client.from("scrape_runs").select("fetched_at, source_url, counts, errors").order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (!run) return null;
+  const { data: rows } = await client.from("matches").select("payload").gte("updated_at", run.fetched_at);
+  const matches = (rows || []).map((row) => row.payload as MatchItem);
+  if (!matches.length) return null;
+  return { fetched_at: run.fetched_at, source_url: run.source_url, counts: run.counts as MatchPayload["counts"], errors: run.errors as Record<string, string>, matches };
 }
 
 export async function getMatches(): Promise<MatchItem[]> {
