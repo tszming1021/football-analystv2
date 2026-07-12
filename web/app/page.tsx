@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Activity, Clock3, Database, RefreshCw, ShieldCheck } from "lucide-react";
-import { RefreshButton } from "../components/RefreshButton";
 import { AuthButton } from "../components/AuthButton";
 import { AdminLink } from "../components/AdminLink";
 import { formatHandicap, getPayload, oddsTriplet, pct, strongestSide } from "../lib/data";
@@ -27,10 +26,6 @@ export default async function HomePage() {
           <AdminLink />
         </div>
       </header>
-
-      <div className="toolbar">
-        <RefreshButton />
-      </div>
 
       <section className="metrics-grid" aria-label="今日概览">
         <Metric icon={<Database size={18} />} label="抓取场次" value={`${payload.counts.included}`} />
