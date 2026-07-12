@@ -365,12 +365,242 @@ class DecisionIterationEngine:
                     or self._has_tag(features, "comeback_equalizer_risk")
                 )
             )
+        if rule_id == "worldcup_knockout_favorite_draw_guard":
+            return (
+                features.competition_type == "world_cup"
+                and features.stage == "knockout"
+                and 0.62 <= features.favorite_win_prob <= 0.76
+                and features.result_probabilities.get("draw", 0.0) >= 0.16
+                and features.handicap_push >= 0.20
+                and (
+                    self._has_tag(features, "knockout_90min_draw_risk")
+                    or self._has_tag(features, "favorite_win_not_clean_sheet")
+                    or self._has_tag(features, "material_home_absence")
+                    or self._has_tag(features, "low_block_opponent")
+                )
+            )
+        if rule_id == "worldcup_knockout_one_goal_favorite_both_score_guard":
+            three_plus = sum(float(features.total_distribution.get(key, 0.0) or 0.0) for key in ["3", "4", "5", "6", "7_plus", "7+"])
+            return (
+                features.competition_type == "world_cup"
+                and features.stage == "knockout"
+                and 0.48 <= features.favorite_win_prob <= 0.62
+                and three_plus >= 0.28
+                and (
+                    self._has_tag(features, "favorite_win_not_depth")
+                    or self._has_tag(features, "organized_transition_underdog")
+                    or self._has_tag(features, "favorite_win_not_clean_sheet")
+                    or self._has_tag(features, "material_home_absence")
+                )
+            )
+        if rule_id == "worldcup_knockout_plus_one_draw_anchor":
+            return (
+                features.competition_type == "world_cup"
+                and features.stage == "knockout"
+                and features.handicap_fail >= 0.50
+                and features.result_probabilities.get("draw", 0.0) >= 0.30
+                and features.favorite_win_prob <= 0.43
+                and (
+                    self._has_tag(features, "plus_one_cover_risk")
+                    or self._has_tag(features, "strong_defense_opponent")
+                    or self._has_tag(features, "top_table_stalemate_guard")
+                )
+            )
+        if rule_id == "worldcup_knockout_home_favorite_clean_sheet_guard":
+            return (
+                features.competition_type == "world_cup"
+                and features.stage == "knockout"
+                and features.favorite_side == "home"
+                and 0.43 <= features.favorite_win_prob <= 0.55
+                and features.handicap_fail >= 0.45
+                and (
+                    self._has_tag(features, "plus_one_cover_risk")
+                    or self._has_tag(features, "weather_suppression")
+                    or self._has_tag(features, "top_table_stalemate_guard")
+                )
+            )
+        if rule_id == "worldcup_knockout_favorite_cold_loss_guard":
+            three_plus = sum(float(features.total_distribution.get(key, 0.0) or 0.0) for key in ["3", "4", "5", "6", "7_plus", "7+"])
+            return (
+                features.competition_type == "world_cup"
+                and features.stage == "knockout"
+                and 0.50 <= features.favorite_win_prob <= 0.62
+                and features.result_probabilities.get("draw", 0.0) >= 0.22
+                and three_plus >= 0.35
+                and (
+                    self._has_tag(features, "organized_transition_underdog")
+                    or self._has_tag(features, "set_piece_underdog_threat")
+                    or self._has_tag(features, "favorite_flat_attack")
+                    or self._has_tag(features, "late_game_volatility")
+                )
+            )
+        if rule_id == "plus_one_push_split_guard":
+            return (
+                features.handicap_line is not None
+                and abs(features.handicap_line) == 1
+                and features.handicap_push >= 0.23
+                and features.handicap_cover >= 0.45
+                and (
+                    self._has_tag(features, "plus_one_cover_risk")
+                    or self._has_tag(features, "one_goal_margin_risk")
+                    or self._has_tag(features, "knockout_90min_draw_risk")
+                    or self._has_tag(features, "derby_or_direct_rival")
+                )
+            )
+        if rule_id == "plus_one_away_push_not_main_guard":
+            return (
+                features.handicap_line is not None
+                and features.handicap_line == -1
+                and features.handicap_fail >= 0.56
+                and features.handicap_push >= 0.20
+                and features.favorite_side == "home"
+                and features.favorite_win_prob >= 0.36
+                and (
+                    self._has_tag(features, "plus_one_cover_risk")
+                    or self._has_tag(features, "one_goal_margin_risk")
+                    or self._has_tag(features, "weak_handicap_depth")
+                    or self._has_tag(features, "derby_or_direct_rival")
+                )
+            )
+        if rule_id == "league_away_favorite_draw_anchor":
+            return (
+                features.competition_type in {"league", "kleague", "allsvenskan"}
+                and features.favorite_side == "away"
+                and 0.55 <= features.favorite_win_prob <= 0.66
+                and features.result_probabilities.get("draw", 0.0) >= 0.20
+                and (
+                    self._has_tag(features, "away_favorite_draw_risk")
+                    or self._has_tag(features, "bottom_home_resistance")
+                    or self._has_tag(features, "post_break_rust")
+                    or self._has_tag(features, "low_block_opponent")
+                )
+            )
+        if rule_id == "league_clear_favorite_upper_score_guard":
+            return (
+                features.competition_type in {"league", "kleague", "allsvenskan"}
+                and features.favorite_win_prob >= 0.60
+                and (
+                    features.high_scoring_risk >= 0.18
+                    or self._total_4plus(features) >= 0.30
+                    or self._has_tag(features, "clear_favorite_depth")
+                    or self._has_tag(features, "opponent_defensive_collapse")
+                )
+            )
+        if rule_id == "ucl_first_leg_heavy_favorite_total_temper_guard":
+            return (
+                features.competition_type in {"league", "ucl", "champions_league"}
+                and features.stage in {"qualifying", "first_leg"}
+                and features.favorite_win_prob >= 0.70
+                and features.result_probabilities.get("away", 0.0) <= 0.12
+                and (
+                    self._has_tag(features, "first_leg_control")
+                    or self._has_tag(features, "travel_disruption")
+                    or self._has_tag(features, "clear_favorite_depth")
+                )
+            )
+        if rule_id == "worldcup_knockout_elite_rival_low_total_guard":
+            return (
+                features.competition_type == "world_cup"
+                and features.stage == "knockout"
+                and 0.48 <= features.favorite_win_prob <= 0.56
+                and features.result_probabilities.get("draw", 0.0) >= 0.22
+                and features.handicap_push >= 0.22
+                and (
+                    self._has_tag(features, "elite_direct_rival")
+                    or self._has_tag(features, "tactical_derby")
+                    or self._has_tag(features, "knockout_90min_draw_risk")
+                )
+            )
+        if rule_id == "worldcup_knockout_balanced_goalless_draw_guard":
+            return (
+                features.competition_type == "world_cup"
+                and features.stage == "knockout"
+                and features.result_probabilities.get("draw", 0.0) >= 0.27
+                and features.favorite_edge <= 0.14
+                and features.handicap_cover >= 0.50
+                and (
+                    self._has_tag(features, "plus_one_cover_risk")
+                    or self._has_tag(features, "elite_direct_rival")
+                    or self._has_tag(features, "knockout_90min_draw_risk")
+                    or self._has_tag(features, "strong_defense_opponent")
+                )
+            )
+        if rule_id == "worldcup_knockout_favorite_concedes_high_tail_guard":
+            return (
+                features.competition_type == "world_cup"
+                and features.stage == "knockout"
+                and features.favorite_win_prob >= 0.64
+                and features.high_scoring_risk >= 0.22
+                and self._total_4plus(features) >= 0.28
+                and (
+                    self._has_tag(features, "favorite_win_not_clean_sheet")
+                    or self._has_tag(features, "organized_transition_underdog")
+                    or self._has_tag(features, "set_piece_underdog_threat")
+                    or self._has_tag(features, "low_block_opponent")
+                )
+            )
+        if rule_id == "balanced_open_league_six_goal_tail_guard":
+            return (
+                features.competition_type in {"league", "allsvenskan"}
+                and features.favorite_edge <= 0.08
+                and (
+                    self._total_4plus(features) >= 0.38
+                    or self._has_tag(features, "open_league_high_variance")
+                    or self._has_tag(features, "both_teams_score_tail")
+                )
+            )
         if rule_id == "worldcup_group_draw_wave_guard":
             return (
                 features.competition_type == "world_cup"
                 and features.stage == "group"
                 and features.round_index == 1
                 and self._has_tag(features, "group_draw_wave")
+            )
+        if rule_id == "worldcup_group_final_favorite_draw_enough_discount":
+            return (
+                features.competition_type == "world_cup"
+                and features.stage == "group"
+                and features.round_index == 3
+                and features.favorite_win_prob >= 0.45
+                and (
+                    self._has_tag(features, "favorite_draw_enough")
+                    or self._has_tag(features, "favorite_conservative_qualification_path")
+                )
+            )
+        if rule_id == "worldcup_group_final_underdog_must_win_low_score":
+            return (
+                features.competition_type == "world_cup"
+                and features.stage == "group"
+                and features.round_index == 3
+                and (
+                    self._has_tag(features, "underdog_must_win")
+                    or self._has_tag(features, "opponent_must_win")
+                )
+            )
+        if rule_id == "worldcup_group_final_locked_top_host_depth":
+            return (
+                features.competition_type == "world_cup"
+                and features.stage == "group"
+                and features.round_index == 3
+                and self._has_tag(features, "locked_top")
+                and (
+                    self._has_tag(features, "host_depth")
+                    or self._has_tag(features, "bench_depth_advantage")
+                    or self._has_tag(features, "opponent_must_win")
+                )
+            )
+        if rule_id == "worldcup_group_final_favorite_win_both_score_tail":
+            return (
+                features.competition_type == "world_cup"
+                and features.stage == "group"
+                and features.round_index == 3
+                and features.favorite_win_prob >= 0.58
+                and (
+                    features.high_scoring_risk >= 0.18
+                    or self._has_tag(features, "eliminated_opponent_no_pressure")
+                    or self._has_tag(features, "favorite_win_not_clean_sheet")
+                    or self._has_tag(features, "must_chase_goal_difference")
+                )
             )
         if rule_id == "favorite_rotation_low_block_depth_discount":
             return (
@@ -669,7 +899,7 @@ def _safe_float(value: Any) -> Optional[float]:
 
 
 def _scoreline_probability(item: Dict[str, Any]) -> float:
-    for key in ["local_probability", "final_probability", "raw_probability", "poisson_probability"]:
+    for key in ["probability", "local_probability", "final_probability", "raw_probability", "poisson_probability"]:
         value = _safe_float(item.get(key))
         if value is not None:
             return value

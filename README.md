@@ -38,7 +38,8 @@ Football Analyst Skill 是一套面向中国竞彩、世界杯及主要足球赛
 |---|---|
 | 市场数据 | 500竞彩主表、欧赔、亚盘、大小盘、让球指数、比分指数与赔率变化 |
 | 基本面 | 排名、近期状态、主客拆分、交锋、赛程、首发、伤停与战意 |
-| 外部补源 | API-Football、Open-Meteo、Opta Analyst、Polymarket及其他可选数据源 |
+| 外部补源 | API-Football、Open-Meteo、Opta Analyst、Polymarket、OddsPortal及其他可选数据源 |
+| 临场补源 | Flashscore首发/阵型/事件/技术统计，AiScore即时比分/射门/危险进攻/角球/部分赔率 |
 | 数学模型 | proxy xG、Poisson、Dixon-Coles、Elo、凯利、EV与贝叶斯融合 |
 | 深度判断 | LEG让球深度、比赛语境、比分矩阵约束与一致性检查 |
 | 风险控制 | 数据完整度、偏差保护、串关相关性、赛前防泄漏与降级机制 |
@@ -51,9 +52,11 @@ flowchart LR
     A["比赛与附件"] --> B["数据采集"]
     B --> C["事实与市场层"]
     C --> D["xG / Poisson / Dixon-Coles"]
-    C --> E["500 / Opta / Polymarket"]
+    C --> E["500 / OddsPortal / Opta / Polymarket"]
+    C --> L["Flashscore / AiScore"]
     D --> F["多源概率融合"]
     E --> F
+    L --> G
     F --> G["赛果 / 让球 / 总球 / 比分"]
     G --> H["LEG与决策迭代"]
     H --> I["一致性与风险检查"]
@@ -156,7 +159,7 @@ python3 train_worldcup_model.py \
 - 数据冲突、阵容风险、天气影响与串关限制。
 - GPT联网复核结论及需要重新计算的事实变化。
 
-报告模板位于 [report_template_jingcai_qimen.md](report_template_jingcai_qimen.md) 和 [report_template_standard.md](report_template_standard.md)。
+报告模板位于 [report_template_jingcai_multi_match.md](report_template_jingcai_multi_match.md)、[report_template_jingcai_qimen.md](report_template_jingcai_qimen.md) 和 [report_template_standard.md](report_template_standard.md)。多场竞彩报告优先使用 `report_template_jingcai_multi_match.md`。
 
 ## 项目结构
 

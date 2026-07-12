@@ -1,7 +1,7 @@
 # {主队} vs {客队} 赛事深度分析报告（市场数据 + 奇门辅助版）
 
 > 报告生成时间: {生成时间}  
-> 数据来源: 500数据源 + API-Football + 联网搜索 + Open-Meteo + 泊松分布模型 + 风险系数模型 + 奇门遁甲辅助  
+> 数据来源: 500数据源 + API-Football + OddsPortal/Flashscore/AiScore补源 + 联网搜索 + Open-Meteo + 泊松分布模型 + 风险系数模型 + 奇门遁甲辅助  
 > 分析师: AI Football Analyst  
 > 模型版本: v5.0 Jingcai-Qimen  
 > 置信度: {置信度}  
@@ -33,6 +33,8 @@
 | 首发阵容 | {得分}/15 | {official/predicted/missing} | {来源} |
 | 伤停确认 | {得分}/10 | {confirmed/reported/missing} | {来源} |
 | 技术统计 | {得分}/10 | {detailed/basic/missing} | {来源} |
+| 外部赔率补源 | {得分}/5 | {complete/partial/failed/missing} | OddsPortal / 赔率API |
+| 临场信息补源 | {得分}/5 | {complete/partial/failed/missing} | Flashscore / AiScore |
 | 天气场地 | {得分}/5 | {forecast/venue_only/missing} | {来源} |
 | 赛程密度 | {得分}/5 | {complete/missing} | {来源} |
 | 联网证据 | {得分}/5 | {verified/generic/missing} | {来源} |
@@ -139,6 +141,9 @@
 | **TheSportsDB事件/场地** | {TheSportsDB事件状态} | 补比赛元数据、场地、开赛时间、赛果，辅助天气定位 |
 | **Odds-API.io市场数字** | {OddsAPIIO状态} | 和500欧洲市场/亚洲让球/让球指数做交叉验证 |
 | **The Odds API市场数字** | {TheOddsAPI状态} | 补h2h、spreads、totals市场方向 |
+| **OddsPortal外部赔率** | {OddsPortal状态} | 补欧赔、亚盘、大小球、赔率变化和公司分歧 |
+| **Flashscore临场信息** | {Flashscore状态} | 补首发、阵型、即时比分、事件、射门、角球和技术统计 |
+| **AiScore临场技术统计** | {AiScore状态} | 补即时比分、射门、射正、危险进攻、角球和部分赔率 |
 | **联网搜索证据** | {联网搜索证据摘要} | 补伤停、首发、轮换、发布会、战术和市场数字动向 |
 
 ---

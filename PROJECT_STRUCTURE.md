@@ -18,6 +18,7 @@ PROJECT_STRUCTURE.md
 PROJECT_IRON_RULES.md
 PROJECT_INTRODUCTION.md
 report_template_jingcai_qimen.md
+report_template_jingcai_multi_match.md
 report_template_standard.md
 requirements.txt
 skill.json
@@ -28,7 +29,8 @@ Notes:
 
 ```text
 .env contains local secrets and must never be committed.
-report_template_jingcai_qimen.md and report_template_standard.md are the report templates and must be preserved.
+report_template_jingcai_multi_match.md is the preferred template for multi-match Jingcai reports.
+report_template_jingcai_qimen.md and report_template_standard.md are legacy/single-match report templates and must be preserved.
 PROJECT_CONTEXT.md and CONTEXT_SNAPSHOT files are local project memory and are excluded from GitHub.
 PROJECT_IRON_RULES.md contains mandatory analysis rules and must be read before any formal report.
 ```
@@ -209,6 +211,7 @@ Old generated reports were removed on 2026-06-08. Preserved templates:
 
 ```text
 report_template_jingcai_qimen.md
+report_template_jingcai_multi_match.md
 report_template_standard.md
 ```
 

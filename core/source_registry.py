@@ -104,6 +104,65 @@ class DataSourceRegistry:
             env_key="THE_ODDS_API_KEY",
         ),
         DataSourceProfile(
+            name="OddsPortal",
+            url="https://www.oddsportal.com/",
+            cost="free web / scraping constraints",
+            fields=[
+                "external_odds",
+                "bookmaker_odds",
+                "europe_odds",
+                "asian_handicap",
+                "totals",
+                "odds_movement",
+                "bookmaker_disagreement",
+                "closing_odds",
+            ],
+            notes=(
+                "外部赔率补源，赛前和临场用于补充欧赔、亚盘、大小球、赔率变化和公司分歧；"
+                "抓取受页面结构、地区和反爬限制影响，失败时必须披露。"
+            ),
+        ),
+        DataSourceProfile(
+            name="Flashscore",
+            url="https://www.flashscore.com/",
+            cost="free web / scraping constraints",
+            fields=[
+                "live_score",
+                "lineups",
+                "formation",
+                "match_events",
+                "live_statistics",
+                "shots",
+                "shots_on_target",
+                "corners",
+                "cards",
+                "possession",
+            ],
+            notes=(
+                "临场信息必尝试补源，用于首发、阵型、即时比分、事件和技术统计；"
+                "若正式首发或临场统计未开放，应记录为空而不是臆补。"
+            ),
+        ),
+        DataSourceProfile(
+            name="AiScore",
+            url="https://www.aiscore.com/",
+            cost="free web / scraping constraints",
+            fields=[
+                "live_score",
+                "live_statistics",
+                "shots",
+                "shots_on_target",
+                "dangerous_attacks",
+                "corners",
+                "event_odds",
+                "partial_odds",
+            ],
+            notes=(
+                "临场技术统计必尝试补源，用于即时比分、射门、射正、危险进攻、角球和部分赔率；"
+                "适合与Flashscore交叉验证临场节奏。"
+            ),
+        ),
+        DataSourceProfile(
             name="TheSportsDB",
             url="https://www.thesportsdb.com/api.php",
             cost="free",

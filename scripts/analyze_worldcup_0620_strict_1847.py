@@ -274,21 +274,48 @@ def audit_scoreline_tiers(scorelines: list[dict], favorite: str, favorite_probab
             chosen.append(item)
 
     favorite_test = (lambda item: item["margin"] > 0) if favorite == "home" else (lambda item: item["margin"] < 0)
+    take(
+        lambda item: favorite_test(item)
+        and abs(item["margin"]) == 1
+        and item["home_goals"] > 0
+        and item["away_goals"] > 0
+        and item["probability"] >= 0.085
+    )
+    if favorite == "home" and 0.42 <= favorite_probability <= 0.56 and abs(line) >= 1.0:
+        take(
+            lambda item: item["margin"] > 0
+            and item["away_goals"] == 0
+            and item["total_goals"] in {1, 2}
+            and item["probability"] >= 0.09
+        )
+    if 0.48 <= favorite_probability <= 0.62 and abs(line) >= 1.0:
+        take(
+            lambda item: favorite_test(item)
+            and abs(item["margin"]) == 1
+            and item["home_goals"] > 0
+            and item["away_goals"] > 0
+            and item["probability"] >= 0.055
+        )
     if favorite_probability >= 0.68 and abs(line) >= 1.75:
         required_margin = int(math.floor(abs(line))) + 1
         take(lambda item: favorite_test(item) and abs(item["margin"]) >= required_margin)
+        take(lambda item: favorite_test(item) and item["away_goals"] == 0 and abs(item["margin"]) >= 2 and item["probability"] >= 0.07)
+        take(lambda item: favorite_test(item) and item["away_goals"] == 0 and abs(item["margin"]) >= 3 and item["probability"] >= 0.06)
         take(lambda item: favorite_test(item) and item["total_goals"] >= 4)
         take(lambda item: favorite_test(item) and item["away_goals"] > 0 and item["total_goals"] >= 4)
     elif favorite_probability >= 0.60 or abs(line) >= 1.0:
+        take(lambda item: favorite_test(item) and item["away_goals"] == 0 and abs(item["margin"]) >= 2 and item["probability"] >= 0.07)
+        take(lambda item: favorite_test(item) and item["away_goals"] == 0 and abs(item["margin"]) >= 3 and item["probability"] >= 0.06)
         take(
             lambda item: favorite_test(item)
             and (
                 (abs(item["margin"]) >= 2 and item["total_goals"] >= 3)
                 or item["total_goals"] >= 4
             )
+            and item["probability"] >= 0.04
         )
         take(lambda item: item["margin"] == 0 and item["total_goals"] >= 2)
-        take(lambda item: favorite_test(item) and item["total_goals"] >= 4)
+        take(lambda item: favorite_test(item) and item["total_goals"] >= 4 and item["probability"] >= 0.04)
     else:
         take(favorite_test)
         take(lambda item: item["margin"] == 0 and item["total_goals"] >= 2)
@@ -310,9 +337,10 @@ def exact_mean(distribution: dict[str, float]) -> float:
     return sum((7.5 if key == "7_plus" else float(key)) * value for key, value in distribution.items())
 
 
-def make_stats(values: tuple[int, int, int]) -> SimpleNamespace:
+def make_stats(values: tuple[int, int, int], xg_values: tuple[float, float] | None = None) -> SimpleNamespace:
     matches, goals_for, goals_against = values
-    return SimpleNamespace(matches_played=matches, goals_for=goals_for, goals_against=goals_against, xg=None, xga=None)
+    xg, xga = xg_values if xg_values is not None else (None, None)
+    return SimpleNamespace(matches_played=matches, goals_for=goals_for, goals_against=goals_against, xg=xg, xga=xga)
 
 
 def map_favorite_handicap(home_settlement: dict[str, float], favorite: str) -> dict[str, float]:
@@ -341,11 +369,12 @@ def analyze_match(match: dict, trained: WorldCupTrainedModel) -> dict:
         source="500竞彩官方总进球",
     )
 
+    real_xg_shrunk = match.get("real_xg_shrunk") or (None, None)
     report = SimpleNamespace(
-        home_stats=make_stats(match["recent"][0]),
-        away_stats=make_stats(match["recent"][1]),
-        home_home_stats=make_stats(match["recent"][0]),
-        away_away_stats=make_stats(match["recent"][1]),
+        home_stats=make_stats(match["recent"][0], real_xg_shrunk[0]),
+        away_stats=make_stats(match["recent"][1], real_xg_shrunk[1]),
+        home_home_stats=make_stats(match["recent"][0], real_xg_shrunk[0]),
+        away_away_stats=make_stats(match["recent"][1], real_xg_shrunk[1]),
         jingcai_match={
             "home_fifa_rank": match["rank"][0],
             "away_fifa_rank": match["rank"][1],
@@ -594,7 +623,10 @@ def analyze_match(match: dict, trained: WorldCupTrainedModel) -> dict:
             },
             "weather": match["weather"],
             "absence_note": match["absence_note"],
-            "api_endpoint_status": {"predictions": 1, "injuries": 0, "lineups": 0, "statistics": 0},
+            "api_endpoint_status": match.get(
+                "api_endpoint_status",
+                {"predictions": 1, "injuries": 0, "lineups": 0, "statistics": 0},
+            ),
         },
         "market": {
             "one_x_two": one_x_two.to_dict(),

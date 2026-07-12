@@ -636,11 +636,14 @@ class SupplementalDataCollector:
     @staticmethod
     def _missing_field_suggestions() -> Dict[str, List[str]]:
         return {
-            "odds": ["500彩票网", "football-data.co.uk(历史)", "AnySport(可选API)"],
+            "odds": ["500彩票网", "OddsPortal", "Odds-API.io", "The Odds API", "AiScore(部分赔率)", "football-data.co.uk(历史)", "AnySport(可选API)"],
             "injuries": ["API-Football", "Sportmonks", "联网搜索"],
-            "lineups": ["API-Football", "Sportmonks", "AnySport", "联网搜索"],
+            "lineups": ["API-Football", "Flashscore", "Sportmonks", "AnySport", "联网搜索"],
             "ranking": ["API-Football standings", "ClubElo", "FootballData.io FIFA Rankings"],
-            "technical_stats": ["API-Football", "FBref", "Sportmonks"],
+            "technical_stats": ["API-Football", "Flashscore", "AiScore", "FBref", "Sportmonks"],
+            "live_score": ["Flashscore", "AiScore", "API-Football live endpoints"],
+            "live_statistics": ["Flashscore", "AiScore", "API-Football statistics"],
+            "odds_movement": ["500彩票网", "OddsPortal", "Odds-API.io", "The Odds API"],
             "market_value": ["Transfermarkt页面/授权数据源"],
             "weather": ["Open-Meteo"],
         }
