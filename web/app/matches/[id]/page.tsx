@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, BarChart3, Goal, LineChart, Sigma, ShieldAlert, Target, Trophy } from "lucide-react";
 import { analyzeMatch } from "../../../lib/analysis";
 import { formatHandicap, getMatch, getMatches, oddsTriplet, pct, topEntries } from "../../../lib/data";
+import { canViewMatch } from "../../../lib/supabase/server";
 import type { DeepMarket, OddsMap } from "../../../lib/types";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,9 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   const match = await getMatch(id);
   if (!match) notFound();
+  const matches = await getMatches();
+  const access = await canViewMatch(match.fixture_page_id, matches[0]?.fixture_page_id);
+  if (!access.allowed) return <LockedMatch match={match} authenticated={access.authenticated} />;
 
   const nspf = oddsTriplet(match.one_x_two);
   const spf = oddsTriplet(match.handicap_three_way);
@@ -75,6 +79,26 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         <DeepPanel title="欧赔均值" market={match.deep_market?.ouzhi} labels={["胜", "平", "负"]} />
         <CompactMarket title="半全场" icon={<LineChart size={18} />} values={match.half_full} limit={9} />
         <CompactMarket title="总进球" icon={<Goal size={18} />} values={match.total_exact} limit={8} />
+      </section>
+    </main>
+  );
+}
+
+function LockedMatch({ match, authenticated }: { match: { match_num: string; league: string; kickoff: string; home: string; away: string }; authenticated: boolean }) {
+  return (
+    <main className="shell">
+      <header className="detail-head">
+        <Link href="/" className="back-link"><ArrowLeft size={18} /> 返回</Link>
+        <div className="match-title-block">
+          <p className="eyebrow">{match.match_num} · {match.league} · {match.kickoff}</p>
+          <h1>{match.home} <span>vs</span> {match.away}</h1>
+        </div>
+      </header>
+      <section className="locked-panel">
+        <ShieldAlert size={34} />
+        <h2>{authenticated ? "这场比赛暂未开通" : "请先注册或登录"}</h2>
+        <p>{authenticated ? "当前账号已开放第一场比赛，其他比赛需要管理员授权。" : "注册后可查看第一场比赛的完整分析，其他比赛需要管理员授权。"}</p>
+        {authenticated ? <p className="contact-note">请联系管理员开通本场比赛权限。</p> : <Link href="/login" className="primary-button">邮箱注册 / 登录</Link>}
       </section>
     </main>
   );

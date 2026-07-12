@@ -82,6 +82,23 @@ curl http://127.0.0.1:3000/api/cron/fetch-matches
 Authorization: Bearer <CRON_SECRET>
 ```
 
+## 邮箱注册与比赛权限
+
+网站使用 Supabase Auth 的邮箱验证码登录：
+
+- 未登录用户可以浏览比赛列表，但进入详情页会看到锁定提示。
+- 登录用户自动开放当前比赛列表中的第一场。
+- 其他比赛需要在 Supabase `match_access` 表中给用户授权。
+- 管理员也可以把 `profiles.access_all` 改为 `true`，开放全部比赛。
+
+登录功能还需要在 `.env.local` 和 Vercel 环境变量中配置：
+
+```env
+NEXT_PUBLIC_SUPABASE_ANON_KEY=Supabase Publishable Key
+```
+
+这个值可以用于浏览器端；`SUPABASE_SERVICE_ROLE_KEY` 只保留在服务器端。
+
 ## 后续上线注意
 
 当前刷新接口适合本地 MVP。上 Vercel 后不应长期写本地 JSON，因为 Vercel 文件系统不是持久数据库。下一步应把刷新结果写入 Supabase Free 或 Neon Free。

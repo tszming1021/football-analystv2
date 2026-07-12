@@ -59,15 +59,60 @@ create table if not exists public.match_reports (
   report jsonb not null
 );
 
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text,
+  access_all boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.match_access (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  fixture_page_id text not null references public.matches(fixture_page_id) on delete cascade,
+  granted_at timestamptz not null default now(),
+  primary key (user_id, fixture_page_id)
+);
+
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.profiles (id, email)
+  values (new.id, new.email)
+  on conflict (id) do update set email = excluded.email;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
 -- Keep the tables private. Server routes use SUPABASE_SERVICE_ROLE_KEY,
 -- and public read policies can be added later together with user accounts.
 alter table public.scrape_runs enable row level security;
 alter table public.matches enable row level security;
 alter table public.odds_snapshots enable row level security;
 alter table public.match_reports enable row level security;
+alter table public.profiles enable row level security;
+alter table public.match_access enable row level security;
+
+drop policy if exists "users can read their profile" on public.profiles;
+create policy "users can read their profile"
+  on public.profiles for select to authenticated
+  using (auth.uid() = id);
+
+drop policy if exists "users can read their access" on public.match_access;
+create policy "users can read their access"
+  on public.match_access for select to authenticated
+  using (auth.uid() = user_id);
 
 -- Allow the server-side service role to write refresh results.
 grant usage on schema public to service_role;
 grant all privileges on table public.scrape_runs, public.matches,
-  public.odds_snapshots, public.match_reports to service_role;
+  public.odds_snapshots, public.match_reports, public.profiles,
+  public.match_access to service_role;
 grant usage, select on all sequences in schema public to service_role;
