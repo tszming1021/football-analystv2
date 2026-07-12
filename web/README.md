@@ -84,9 +84,10 @@ Authorization: Bearer <CRON_SECRET>
 
 ## 邮箱注册与比赛权限
 
-网站使用 Supabase Auth 的邮箱验证码登录：
+网站使用 Supabase Auth 的邮箱密码登录和邮箱验证码注册：
 
 - 未登录用户可以浏览比赛列表，但进入详情页会看到锁定提示。
+- 登录页可以切换“登录”和“注册”：登录使用邮箱和密码；注册使用邮箱、密码，提交后输入邮箱收到的验证码。
 - 登录用户自动开放当前比赛列表中的第一场。
 - 其他比赛需要在 Supabase `match_access` 表中给用户授权。
 - 管理员也可以把 `profiles.access_all` 改为 `true`，开放全部比赛。
@@ -98,6 +99,15 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=Supabase Publishable Key
 ```
 
 这个值可以用于浏览器端；`SUPABASE_SERVICE_ROLE_KEY` 只保留在服务器端。
+
+注册验证码还需要在 Supabase 的 Authentication > Email Templates > Confirm signup 中保留 `{{ .Token }}`，例如：
+
+```html
+<h2>注册验证码</h2>
+<p>验证码：{{ .Token }}</p>
+```
+
+如果模板只使用 `{{ .ConfirmationURL }}`，收到的是确认链接，不会显示数字验证码。
 
 ## 后续上线注意
 
