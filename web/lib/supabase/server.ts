@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { getAdminClient } from "./admin";
 
 export async function getServerClient() {
   const cookieStore = await cookies();
@@ -37,9 +38,13 @@ export async function canViewMatch(fixturePageId: string, firstMatchId: string |
 
   const client = await getServerClient();
   if (!client) return { allowed: false, authenticated: true };
+  // Read permission server-side with the service role so RLS/session refresh
+  // cannot leave a user locked after an administrator grants access.
+  const admin = getAdminClient();
+  const permissionClient = admin || client;
   const [{ data: profile }, { data: access }] = await Promise.all([
-    client.from("profiles").select("access_all").eq("id", user.id).maybeSingle(),
-    client.from("match_access").select("fixture_page_id").eq("user_id", user.id).eq("fixture_page_id", fixturePageId).maybeSingle()
+    permissionClient.from("profiles").select("access_all").eq("id", user.id).maybeSingle(),
+    permissionClient.from("match_access").select("fixture_page_id").eq("user_id", user.id).eq("fixture_page_id", fixturePageId).maybeSingle()
   ]);
 
   return { allowed: Boolean(profile?.access_all || access), authenticated: true };
