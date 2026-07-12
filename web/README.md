@@ -103,6 +103,16 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=Supabase Publishable Key
 
 如果希望注册后直接登录，请在 Supabase 的 Authentication > Providers > Email 中关闭 Confirm email。否则 Supabase 会要求用户先确认邮箱，页面无法绕过这个安全设置。
 
+## 管理员后台
+
+在 `.env.local` 和 Vercel 环境变量中配置管理员邮箱：
+
+```env
+ADMIN_EMAILS=your-admin-email@example.com
+```
+
+多个管理员邮箱用英文逗号分隔。管理员登录后打开 `/admin`，可以查看所有注册用户，并一键开通或取消“全部比赛”权限。`SUPABASE_SERVICE_ROLE_KEY` 只在服务器端使用，不要放进 `NEXT_PUBLIC_` 变量。
+
 ## 后续上线注意
 
 当前刷新接口适合本地 MVP。上 Vercel 后不应长期写本地 JSON，因为 Vercel 文件系统不是持久数据库。下一步应把刷新结果写入 Supabase Free 或 Neon Free。

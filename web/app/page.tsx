@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Activity, Clock3, Database, RefreshCw, ShieldCheck } from "lucide-react";
 import { RefreshButton } from "../components/RefreshButton";
 import { AuthButton } from "../components/AuthButton";
+import { AdminLink } from "../components/AdminLink";
 import { formatHandicap, getPayload, oddsTriplet, pct, strongestSide } from "../lib/data";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,7 @@ export default async function HomePage() {
             <span>总场数 {payload.counts.included}</span>
           </div>
           <AuthButton />
+          <AdminLink />
         </div>
       </header>
 

@@ -194,6 +194,24 @@ h1 span {
 .locked-panel > svg { color: var(--warning); }
 .locked-panel p { max-width: 520px; margin: 0; color: var(--muted); line-height: 1.7; }
 .contact-note { color: var(--accent-2) !important; font-weight: 760; }
+.admin-shell { max-width: 1180px; }
+.admin-intro { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 28px 0 16px; }
+.admin-intro h2 { margin: 0 0 6px; }
+.admin-intro p { margin: 0; color: var(--muted); }
+.secondary-button, .access-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 38px; border: 1px solid var(--line); border-radius: 8px; padding: 0 12px; background: var(--surface); color: var(--ink); cursor: pointer; font: inherit; font-size: 13px; font-weight: 760; }
+.secondary-button:hover, .access-button:hover { border-color: var(--accent); color: var(--accent); }
+.secondary-button:disabled, .access-button:disabled { cursor: wait; opacity: 0.65; }
+.admin-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); box-shadow: var(--shadow); }
+.admin-table { width: 100%; min-width: 760px; border-collapse: collapse; text-align: left; }
+.admin-table th, .admin-table td { padding: 14px 16px; border-bottom: 1px solid var(--line); font-size: 13px; white-space: nowrap; }
+.admin-table th { color: var(--muted); background: var(--surface-2); font-size: 12px; }
+.admin-table tr:last-child td { border-bottom: 0; }
+.user-status, .access-status { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); }
+.user-status.confirmed, .access-status.granted { color: var(--accent); font-weight: 760; }
+.access-button { color: var(--accent); border-color: rgba(24, 135, 96, 0.35); }
+.access-button.revoke { color: var(--accent-2); border-color: rgba(191, 76, 48, 0.3); }
+.admin-error { color: var(--accent-2); font-weight: 760; }
+.admin-empty { padding: 28px; color: var(--muted); text-align: center; }
 .admin-contact { display: grid; justify-items: center; gap: 8px; margin-top: 8px; padding-top: 18px; border-top: 1px solid var(--line); }
 .admin-contact p { color: var(--muted) !important; font-size: 13px; font-weight: 760; }
 .admin-contact img { display: block; width: min(190px, 72vw); aspect-ratio: 1; border: 1px solid var(--line); border-radius: 8px; object-fit: cover; }
