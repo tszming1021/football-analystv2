@@ -178,7 +178,7 @@ h1 span {
 .captcha-block { display: grid; gap: 10px; }
 .captcha-row { display: flex; align-items: center; gap: 8px; }
 .captcha-code { display: grid; min-height: 42px; flex: 1; place-items: center; border: 1px dashed var(--accent); border-radius: 8px; background: var(--surface-2); color: var(--ink); font-size: 21px; font-weight: 900; letter-spacing: 5px; }
-.captcha-refresh { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--muted); cursor: pointer; }
+.captcha-refresh { display: inline-flex; width: auto; height: 42px; align-items: center; justify-content: center; gap: 5px; border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; background: var(--surface); color: var(--muted); cursor: pointer; font: inherit; font-size: 12px; font-weight: 760; white-space: nowrap; }
 .captcha-refresh:hover { color: var(--accent); border-color: var(--accent); }
 .input-wrap { display: flex; align-items: center; gap: 8px; min-height: 44px; border: 1px solid var(--line); border-radius: 8px; padding: 0 12px; }
 .input-wrap input, .code-input { width: 100%; min-height: 42px; border: 1px solid var(--line); border-radius: 8px; padding: 0 12px; color: var(--ink); font: inherit; outline: none; }
