@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 
 export function isAdminEmail(email?: string | null) {
   if (!email) return false;
-  const admins = (process.env.ADMIN_EMAILS || "")
+  const admins = (process.env.ADMIN_EMAILS || "jamesm871021@gmail.com")
     .split(",")
     .map((item) => item.trim().toLowerCase())
     .filter(Boolean);
