@@ -6,11 +6,11 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getBrowserClient } from "../lib/supabase/browser";
 
-export function AuthForm() {
+export function AuthForm({ initialMode = "login" }: { initialMode?: "login" | "register" }) {
   const router = useRouter();
   const client = getBrowserClient();
   const [email, setEmail] = useState("");
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode] = useState<"login" | "register">(initialMode);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [captcha, setCaptcha] = useState("");
@@ -22,11 +22,6 @@ export function AuthForm() {
     if (mode === "register") setCaptcha(createCaptcha());
     setCaptchaInput("");
   }, [mode]);
-
-  function selectMode(nextMode: "login" | "register") {
-    setMode(nextMode);
-    setMessage("");
-  }
 
   async function submitCredentials(event: FormEvent) {
     event.preventDefault();
@@ -63,8 +58,8 @@ export function AuthForm() {
         <div className="auth-title"><div className="auth-icon"><ShieldCheck size={24} /></div><div><p className="eyebrow">Football Analyst</p><h1>邮箱注册 / 登录</h1></div></div>
         <p className="auth-copy">注册后可查看第一场比赛的完整分析。其他比赛需要管理员单独开通。</p>
         <div className="auth-tabs" role="tablist" aria-label="账号操作">
-          <button type="button" className={mode === "login" ? "auth-tab active" : "auth-tab"} onClick={() => selectMode("login")}>登录</button>
-          <button type="button" className={mode === "register" ? "auth-tab active" : "auth-tab"} onClick={() => selectMode("register")}>注册</button>
+          <Link href="/login" className={mode === "login" ? "auth-tab active" : "auth-tab"}>登录</Link>
+          <Link href="/register" className={mode === "register" ? "auth-tab active" : "auth-tab"}>注册</Link>
         </div>
         <form onSubmit={submitCredentials} className="auth-form">
             <label htmlFor="email">邮箱地址</label>
