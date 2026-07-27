@@ -72,14 +72,6 @@ class DataSourceRegistry:
             env_key="SPORTMONKS_KEY",
         ),
         DataSourceProfile(
-            name="TheStatsAPI",
-            url="https://www.thestatsapi.com/football-api",
-            cost="paid",
-            fields=["fixtures", "venue", "referee", "xg", "xga", "shotmap", "lineups", "player_stats", "external_odds"],
-            notes="优先用于真实xG/xGA和shotmap；赛前若xG未开放，则记录状态并回退到项目proxy xG。",
-            env_key="THESTATSAPI_KEY",
-        ),
-        DataSourceProfile(
             name="AnySport",
             url="https://docs.anysport.io/",
             cost="free/paid quota",
@@ -174,7 +166,7 @@ class DataSourceRegistry:
             name="FBref",
             url="https://fbref.com/en/",
             cost="free",
-            fields=["xg", "shots", "possession", "passing", "pressing_proxy"],
+            fields=["shots", "possession", "passing", "pressing_proxy"],
             notes="技术统计质量高，但页面抓取需限速，适合赛后技术面补强。",
         ),
         DataSourceProfile(

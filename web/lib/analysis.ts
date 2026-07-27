@@ -13,7 +13,7 @@ export type MatchAnalysis = {
   primary: Pick;
   handicap: Pick;
   goals: Pick;
-  xg: {
+  poisson: {
     home: number;
     away: number;
     total: number;
@@ -45,7 +45,7 @@ export function analyzeMatch(match: MatchItem): MatchAnalysis {
   const handicap = sortedByProbability(handicapRows)[0];
   const margin = primary && second ? primary.normalized - second.normalized : 0;
   const goals = chooseGoals(match.total_exact);
-  const xg = estimateXg(match, primary?.key);
+  const poisson = estimatePoissonLambdas(match, primary?.key);
   const scoreCandidates = chooseScoreCandidates(match.scores, primary?.key, goals.label);
   const movement = marketMovement(match);
   const risk = assessRisk(margin, movement.conflictCount, match.handicap);
@@ -66,7 +66,7 @@ export function analyzeMatch(match: MatchItem): MatchAnalysis {
       probability: handicap?.normalized
     },
     goals,
-    xg,
+    poisson,
     scoreCandidates,
     scoreSummary: formatScoreSummary(scoreCandidates.slice(0, 3)),
     summary: buildSummary(match, primary, handicap, goals, scoreCandidates.slice(0, 3), risk, level, movement),
@@ -74,7 +74,7 @@ export function analyzeMatch(match: MatchItem): MatchAnalysis {
   };
 }
 
-function estimateXg(match: MatchItem, sideKey: string | undefined) {
+function estimatePoissonLambdas(match: MatchItem, sideKey: string | undefined) {
   const totalFromLine = match.deep_market?.daxiao?.current?.[1];
   const totalFromGoals = expectedTotalGoals(match.total_exact);
   const totalFromScores = expectedTotalFromScores(match.scores);
@@ -85,13 +85,13 @@ function estimateXg(match: MatchItem, sideKey: string | undefined) {
   ]);
   const total = clamp(blendedTotal || 2.35, 1.2, 4.2);
   const share = clamp(homeGoalShare(match, sideKey), 0.28, 0.72);
-  const home = roundXg(total * share);
-  const away = roundXg(total - home);
+  const home = roundLambda(total * share);
+  const away = roundLambda(total - home);
   return {
     home,
     away,
-    total: roundXg(home + away),
-    note: "盘口/总进球/比分盘反推"
+    total: roundLambda(home + away),
+    note: "赔率总球/比分盘/三向概率反推"
   };
 }
 
@@ -138,7 +138,7 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-function roundXg(value: number) {
+function roundLambda(value: number) {
   return Math.round(value * 100) / 100;
 }
 

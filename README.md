@@ -1,6 +1,6 @@
 <div align="center">
 
-# Football Analyst Skill
+# Football Analyst v2
 
 ### 可审计、可复盘的足球赛前概率分析系统
 
@@ -8,8 +8,8 @@
 
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-2F855A)](LICENSE)
-[![CI](https://github.com/tszming1021/football-analyst-skill/actions/workflows/ci.yml/badge.svg)](https://github.com/tszming1021/football-analyst-skill/actions/workflows/ci.yml)
-[![Repository](https://img.shields.io/badge/Repository-Private-24292F?logo=github)](https://github.com/tszming1021/football-analyst-skill)
+[![CI](https://github.com/tszming1021/football-analystv2/actions/workflows/ci.yml/badge.svg)](https://github.com/tszming1021/football-analystv2/actions/workflows/ci.yml)
+[![Repository](https://img.shields.io/badge/Repository-football--analystv2-24292F?logo=github)](https://github.com/tszming1021/football-analystv2)
 
 **数据采集 · 概率建模 · 市场融合 · 风险控制 · 联网复核 · 赛后校准**
 
@@ -21,7 +21,7 @@
 
 ## 项目定位
 
-Football Analyst Skill 是一套面向中国竞彩、世界杯及主要足球赛事的赛前研究工作流。它不依赖单一模型直接下结论，而是分别回答四个问题：
+Football Analyst v2 是一套面向中国竞彩、世界杯及主要足球赛事的赛前研究工作流。它不依赖单一模型直接下结论，而是分别回答四个问题：
 
 | 分析层 | 核心问题 | 主要输出 |
 |---|---|---|
@@ -38,9 +38,9 @@ Football Analyst Skill 是一套面向中国竞彩、世界杯及主要足球赛
 |---|---|
 | 市场数据 | 500竞彩主表、欧赔、亚盘、大小盘、让球指数、比分指数与赔率变化 |
 | 基本面 | 排名、近期状态、主客拆分、交锋、赛程、首发、伤停与战意 |
-| 外部补源 | API-Football、Open-Meteo、Opta Analyst、Polymarket、OddsPortal及其他可选数据源 |
+| 外部补源 | API-Football、Open-Meteo、Polymarket、OddsPortal及其他可选数据源 |
 | 临场补源 | Flashscore首发/阵型/事件/技术统计，AiScore即时比分/射门/危险进攻/角球/部分赔率 |
-| 数学模型 | proxy xG、Poisson、Dixon-Coles、Elo、凯利、EV与贝叶斯融合 |
+| 数学模型 | Elo、Poisson、Dixon-Coles、EV、凯利与贝叶斯融合 |
 | 深度判断 | LEG让球深度、比赛语境、比分矩阵约束与一致性检查 |
 | 风险控制 | 数据完整度、偏差保护、串关相关性、赛前防泄漏与降级机制 |
 | 复核闭环 | GPT联网事实核验、结构化报告、Brier Score、Log Loss与错误归因 |
@@ -51,8 +51,8 @@ Football Analyst Skill 是一套面向中国竞彩、世界杯及主要足球赛
 flowchart LR
     A["比赛与附件"] --> B["数据采集"]
     B --> C["事实与市场层"]
-    C --> D["xG / Poisson / Dixon-Coles"]
-    C --> E["500 / OddsPortal / Opta / Polymarket"]
+    C --> D["Elo / Poisson / EV / Kelly"]
+    C --> E["500 / OddsPortal / Polymarket"]
     C --> L["Flashscore / AiScore"]
     D --> F["多源概率融合"]
     E --> F
@@ -70,7 +70,7 @@ flowchart LR
 
 ### 多源赛果融合
 
-严格赛果模型将 Poisson、500市场、Opta模拟和 Polymarket 放在同一层一次性融合，避免先后顺序改变结果。基础权重会根据以下因素动态折扣并重新归一化：
+严格赛果模型以 500、欧赔、亚盘、大小球、比分盘和赔率变化为主证据，再用 Elo/Poisson 独立先验、EV/凯利和 LEG 深度互相验证，避免单一模型直接下结论。基础权重会根据以下因素动态折扣并重新归一化：
 
 - 数据新鲜度与样本完整度。
 - 市场流动性、价差和成交质量。
@@ -82,7 +82,7 @@ flowchart LR
 
 | 玩法 | 主要依据 |
 |---|---|
-| 赛果 | 预期进球、Poisson、去水市场概率、Opta与Polymarket |
+| 赛果 | 去水市场概率、赔率变化、Elo/Poisson先验与Polymarket |
 | 让球 | 让球三向市场、LEG深度、净胜球矩阵与赢盘路径 |
 | 总球 | 总进球分布、大小盘、天气、节奏与阵容结构 |
 | 比分 | Dixon-Coles矩阵、赛果后验、总球约束与比分市场温和校正 |
@@ -96,8 +96,8 @@ GPT 联网复核和奇门辅助的直接概率权重均为 **0%**。它们用于
 ### 1. 获取项目
 
 ```bash
-git clone git@github.com:tszming1021/football-analyst-skill.git
-cd football-analyst-skill
+git clone git@github.com:tszming1021/football-analystv2.git
+cd football-analystv2
 ```
 
 ### 2. 创建环境
@@ -164,7 +164,7 @@ python3 train_worldcup_model.py \
 ## 项目结构
 
 ```text
-football-analyst-skill/
+football-analystv2/
 ├── core/                         # 采集、模型、融合、决策与报告核心
 │   └── data_sources/            # 外部数据源适配器
 ├── data/

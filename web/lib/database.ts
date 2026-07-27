@@ -86,9 +86,9 @@ function reportRow(match: MatchItem, generatedAt: string) {
     primary_pick: report.primary.label,
     handicap_pick: report.handicap.label,
     goals_pick: report.goals.label,
-    xg_home: report.xg.home,
-    xg_away: report.xg.away,
-    xg_total: report.xg.total,
+    lambda_home: report.poisson.home,
+    lambda_away: report.poisson.away,
+    lambda_total: report.poisson.total,
     score_top3: report.scoreCandidates.slice(0, 3),
     report
   };

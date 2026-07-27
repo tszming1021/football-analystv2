@@ -27,7 +27,6 @@ from core.match_intelligence import MatchIntelligenceCollector, MatchIntelligenc
 from core.odds_history import OddsHistoryStore
 from core.supplemental_data import SupplementalDataCollector
 from core.weather_context import WeatherContextCollector
-from core.data_sources.thestatsapi import TheStatsAPIClient
 
 
 @dataclass
@@ -81,8 +80,6 @@ class StatisticsData:
     losses: int
     goals_for: int
     goals_against: int
-    xg: Optional[float] = None
-    xga: Optional[float] = None
     clean_sheets: Optional[int] = None
     btts: Optional[int] = None
     form: Optional[List[str]] = None  # 近5场结果 ['W', 'W', 'D', 'L', 'W']
@@ -188,7 +185,6 @@ class DataCollector:
         self.intelligence_collector = MatchIntelligenceCollector(self._api_get, self.supplemental_collector)
         self.odds_history_store = OddsHistoryStore()
         self.weather_collector = WeatherContextCollector()
-        self.thestatsapi_client = TheStatsAPIClient(session=self.session, timeout=10)
         self.api_available = self._check_api_availability()
 
     def _headers(self) -> Dict[str, str]:
@@ -335,21 +331,6 @@ class DataCollector:
                 report.data_sources_used.append("Weather")
         except Exception as e:
             report.data_warnings.append(f"天气数据获取失败: {e}")
-
-        print("\n📈 步骤 3.5/5: xG/xGA数据源...")
-        try:
-            self._collect_xg_data(report, parsed_match)
-            xg_data = ((report.supplemental_data or {}).get("xg_data") or {})
-            if xg_data and "TheStatsAPI" not in report.data_sources_used:
-                report.data_sources_used.append("TheStatsAPI")
-            if xg_data.get("xg_available"):
-                print("✅ TheStatsAPI真实xG获取完成")
-            elif xg_data:
-                print("⚠️ TheStatsAPI暂无真实xG，后续使用proxy xG")
-            else:
-                print("⚠️ 未配置TheStatsAPI，后续使用proxy xG")
-        except Exception as e:
-            report.data_warnings.append(f"xG数据源获取失败: {e}")
 
         # 步骤3: 联网搜索获取数据。只记录真实搜索结果，不生成模拟结论。
         print("\n🔍 步骤 4/5: 联网搜索数据...")
@@ -525,8 +506,6 @@ class DataCollector:
             losses=stats.losses,
             goals_for=stats.goals_for,
             goals_against=stats.goals_against,
-            xg=stats.goals_for / stats.matches_played if stats.matches_played else None,
-            xga=stats.goals_against / stats.matches_played if stats.matches_played else None,
             form=stats.form,
             source=stats.source,
         )
@@ -619,35 +598,6 @@ class DataCollector:
         )
         if context:
             report.weather_context = context.to_dict()
-
-    def _collect_xg_data(self, report: CompleteDataReport, parsed_match: ParsedMatch):
-        """Prefer actual xG providers. Proxy xG is calculated later in model layer."""
-        if not self.thestatsapi_client.available:
-            report.data_warnings.append("未提供 THESTATSAPI_KEY，真实xG源跳过")
-            return
-
-        match_date = None
-        if report.match_data:
-            match_date = report.match_data.match_date.strftime("%Y-%m-%d")
-        elif report.jingcai_match:
-            match_date = str(report.jingcai_match.get("match_date") or "")[:10] or None
-        competition_hint = (report.jingcai_match or {}).get("league") or None
-        if competition_hint and "世界杯" in str(competition_hint):
-            competition_hint = "world cup"
-        elif competition_hint and ("国际" in str(competition_hint) or "友谊" in str(competition_hint)):
-            competition_hint = "friendly"
-
-        probe = self.thestatsapi_client.probe_match(
-            home_name=parsed_match.home_team_en or parsed_match.home_team_raw,
-            away_name=parsed_match.away_team_en or parsed_match.away_team_raw,
-            match_date=match_date,
-            competition_hint=competition_hint,
-        )
-        supplemental = report.supplemental_data or {}
-        supplemental["xg_data"] = probe.to_dict()
-        report.supplemental_data = supplemental
-        for warning in probe.warnings[:5]:
-            report.data_warnings.append(f"TheStatsAPI: {warning}")
 
     def _merge_jingcai_intelligence(self, report: CompleteDataReport, parsed_match: ParsedMatch):
         """把500的近期赛程、未来赛程和预计阵容转成可评分的结构化情报。"""
@@ -1152,8 +1102,6 @@ class DataCollector:
             losses=losses.get('total') or 0,
             goals_for=total_for,
             goals_against=total_against,
-            xg=(total_for / total_played) if total_played else None,
-            xga=(total_against / total_played) if total_played else None,
             clean_sheets=stats.get('clean_sheet', {}).get('total'),
             form=list(stats.get('form') or '')[-5:],
             source='API-Football teams/statistics',

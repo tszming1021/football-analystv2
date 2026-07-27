@@ -24,8 +24,8 @@ class LEGSignal:
     away_depth_score_10: float
     home_line_score_10: float
     away_line_score_10: float
-    home_xg_score_10: float
-    away_xg_score_10: float
+    home_expected_goal_score_10: float
+    away_expected_goal_score_10: float
     home_context_score_10: float
     away_context_score_10: float
     depth_gap_10: float
@@ -49,13 +49,12 @@ class LEGModel:
         goals_signal: Any,
         scoreline_signal: Any,
         context: Any,
-        xg_signal: Any = None,
     ) -> LEGSignal:
         notes: List[str] = []
         warnings: List[str] = []
 
         line_score = LEGModel._line_score(market_signal, handicap_signal, notes, warnings)
-        expected_goals_score = LEGModel._expected_goals_score(goals_signal, scoreline_signal, notes, warnings, xg_signal)
+        expected_goals_score = LEGModel._expected_goals_score(goals_signal, scoreline_signal, notes, warnings)
         game_context_score = LEGModel._game_context_score(context, notes, warnings)
 
         total_score = 0.38 * line_score + 0.34 * expected_goals_score + 0.28 * game_context_score
@@ -69,7 +68,6 @@ class LEGModel:
             game_context_score=game_context_score,
             total_score=total_score,
             goals_signal=goals_signal,
-            xg_signal=xg_signal,
         )
 
         if abs(line_score - expected_goals_score) >= 0.28:
@@ -88,8 +86,8 @@ class LEGModel:
             away_depth_score_10=quant["away_depth_score_10"],
             home_line_score_10=quant["home_line_score_10"],
             away_line_score_10=quant["away_line_score_10"],
-            home_xg_score_10=quant["home_xg_score_10"],
-            away_xg_score_10=quant["away_xg_score_10"],
+            home_expected_goal_score_10=quant["home_expected_goal_score_10"],
+            away_expected_goal_score_10=quant["away_expected_goal_score_10"],
             home_context_score_10=quant["home_context_score_10"],
             away_context_score_10=quant["away_context_score_10"],
             depth_gap_10=quant["depth_gap_10"],
@@ -164,16 +162,11 @@ class LEGModel:
         scoreline_signal: Any,
         notes: List[str],
         warnings: List[str],
-        xg_signal: Any = None,
     ) -> float:
         score = 0.50
         final_mean = LEGModel._safe_float(getattr(goals_signal, "final_goal_mean", None)) if goals_signal else None
         exact = getattr(goals_signal, "exact_distribution", {}) if goals_signal else {}
         top_scores = getattr(scoreline_signal, "top_scores", []) if scoreline_signal else []
-        xg_edge = LEGModel._safe_float(getattr(xg_signal, "xg_edge", None)) if xg_signal else None
-        xga_edge = LEGModel._safe_float(getattr(xg_signal, "xga_edge", None)) if xg_signal else None
-        xg_source = getattr(xg_signal, "source", "") if xg_signal else ""
-
         if final_mean is not None:
             if final_mean >= 3.35:
                 score += 0.16
@@ -212,29 +205,6 @@ class LEGModel:
             if risk_margins and max(risk_margins) >= 3:
                 score += 0.04
                 notes.append("E: 风险比分位保留赢深路径")
-
-        if xg_edge is not None:
-            if xg_edge >= 0.75:
-                score += 0.12
-                notes.append("E: xG/proxy xG优势明显，支持热门方创造力")
-            elif xg_edge >= 0.35:
-                score += 0.06
-                notes.append("E: xG/proxy xG有优势")
-            elif xg_edge <= 0.10:
-                score -= 0.08
-                warnings.append("E: xG/proxy xG优势不足，强队深度需降级")
-        if xga_edge is not None:
-            if xga_edge >= 0.45:
-                score += 0.06
-                notes.append("E: 对手防守风险更高，深度条件增强")
-            elif xga_edge <= -0.20:
-                score -= 0.05
-                warnings.append("E: 热门方防守风险不低，需防丢球")
-        if xg_signal:
-            if xg_source == "api_actual":
-                notes.append("E: 已优先采用API真实xG/xGA")
-            else:
-                notes.append("E: 真实xG缺失，采用赛前proxy xG/xGA")
 
         return LEGModel._clamp(score)
 
@@ -320,30 +290,15 @@ class LEGModel:
         game_context_score: float,
         total_score: float,
         goals_signal: Any,
-        xg_signal: Any,
     ) -> Dict[str, float]:
         favorite = getattr(market_signal, "favorite", "") if market_signal else ""
-        home_xg = LEGModel._safe_float(getattr(xg_signal, "home_xg", None)) if xg_signal else None
-        away_xg = LEGModel._safe_float(getattr(xg_signal, "away_xg", None)) if xg_signal else None
-        home_xga = LEGModel._safe_float(getattr(xg_signal, "home_xga", None)) if xg_signal else None
-        away_xga = LEGModel._safe_float(getattr(xg_signal, "away_xga", None)) if xg_signal else None
-        xg_edge = LEGModel._safe_float(getattr(xg_signal, "xg_edge", None)) if xg_signal else None
 
         if favorite not in {"home", "away"}:
-            if xg_edge is not None:
-                favorite = "home" if xg_edge >= 0 else "away"
-            else:
-                favorite = "home"
-
-        home_xg = home_xg if home_xg is not None else 1.25
-        away_xg = away_xg if away_xg is not None else 1.05
-        home_xga = home_xga if home_xga is not None else away_xg
-        away_xga = away_xga if away_xga is not None else home_xg
+            favorite = "home"
 
         final_goal_mean = LEGModel._safe_float(getattr(goals_signal, "final_goal_mean", None)) if goals_signal else None
-        xg_total = max(0.35, home_xg + away_xg)
-        target_total = 0.65 * xg_total + 0.35 * final_goal_mean if final_goal_mean else xg_total
-        home_share = LEGModel._clamp_range(home_xg / xg_total, 0.18, 0.82)
+        target_total = final_goal_mean if final_goal_mean else 2.50
+        home_share = LEGModel._market_result_share(market_signal, favorite)
         away_share = 1 - home_share
 
         home_leg = target_total * home_share
@@ -366,11 +321,11 @@ class LEGModel:
         away_line = LEGModel._side_score_from_favorite(line_score, favorite, "away")
         home_context = LEGModel._side_score_from_favorite(game_context_score, favorite, "home")
         away_context = LEGModel._side_score_from_favorite(game_context_score, favorite, "away")
-        home_xg_score = LEGModel._team_xg_score(home_leg, home_xga, away_xga)
-        away_xg_score = LEGModel._team_xg_score(away_leg, away_xga, home_xga)
+        home_expected_goal_score = LEGModel._team_expected_goal_score(home_leg, target_total)
+        away_expected_goal_score = LEGModel._team_expected_goal_score(away_leg, target_total)
 
-        home_depth = 0.35 * home_line + 0.35 * home_xg_score + 0.30 * home_context
-        away_depth = 0.35 * away_line + 0.35 * away_xg_score + 0.30 * away_context
+        home_depth = 0.35 * home_line + 0.35 * home_expected_goal_score + 0.30 * home_context
+        away_depth = 0.35 * away_line + 0.35 * away_expected_goal_score + 0.30 * away_context
 
         return {
             "home_leg_expected_goals": round(home_leg, 2),
@@ -379,8 +334,8 @@ class LEGModel:
             "away_depth_score_10": round(LEGModel._clamp_range(away_depth, 0.0, 10.0), 1),
             "home_line_score_10": round(home_line, 1),
             "away_line_score_10": round(away_line, 1),
-            "home_xg_score_10": round(home_xg_score, 1),
-            "away_xg_score_10": round(away_xg_score, 1),
+            "home_expected_goal_score_10": round(home_expected_goal_score, 1),
+            "away_expected_goal_score_10": round(away_expected_goal_score, 1),
             "home_context_score_10": round(home_context, 1),
             "away_context_score_10": round(away_context, 1),
             "depth_gap_10": round(home_depth - away_depth, 1),
@@ -395,11 +350,18 @@ class LEGModel:
         return LEGModel._clamp_range(favorite_score if side == favorite else underdog_score, 0.0, 10.0)
 
     @staticmethod
-    def _team_xg_score(team_leg_xg: float, team_xga: float, opponent_xga: float) -> float:
-        attack = LEGModel._clamp_range(team_leg_xg / 2.25, 0.0, 1.0)
-        opponent_vulnerability = LEGModel._clamp_range(opponent_xga / 2.25, 0.0, 1.0)
-        own_risk_penalty = LEGModel._clamp_range((team_xga - 1.0) / 2.0, 0.0, 0.35)
-        return LEGModel._clamp_range(10.0 * (0.62 * attack + 0.38 * opponent_vulnerability - own_risk_penalty), 0.0, 10.0)
+    def _market_result_share(market_signal: Any, favorite: str) -> float:
+        implied_home = LEGModel._safe_float(getattr(market_signal, "implied_home", None)) if market_signal else None
+        implied_away = LEGModel._safe_float(getattr(market_signal, "implied_away", None)) if market_signal else None
+        if implied_home is not None and implied_away is not None and implied_home + implied_away > 0:
+            return LEGModel._clamp_range(implied_home / (implied_home + implied_away), 0.18, 0.82)
+        return 0.56 if favorite == "home" else 0.44
+
+    @staticmethod
+    def _team_expected_goal_score(team_leg_goals: float, total_goals: float) -> float:
+        total_factor = LEGModel._clamp_range(total_goals / 3.25, 0.0, 1.0)
+        team_factor = LEGModel._clamp_range(team_leg_goals / 2.25, 0.0, 1.0)
+        return LEGModel._clamp_range(10.0 * (0.68 * team_factor + 0.32 * total_factor), 0.0, 10.0)
 
     @staticmethod
     def _safe_float(value: Any) -> Optional[float]:

@@ -52,9 +52,9 @@ create table if not exists public.match_reports (
   primary_pick text,
   handicap_pick text,
   goals_pick text,
-  xg_home numeric(5, 2),
-  xg_away numeric(5, 2),
-  xg_total numeric(5, 2),
+  lambda_home numeric(5, 2),
+  lambda_away numeric(5, 2),
+  lambda_total numeric(5, 2),
   score_top3 jsonb not null default '[]'::jsonb,
   report jsonb not null
 );

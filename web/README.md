@@ -118,6 +118,6 @@ ADMIN_EMAILS=your-admin-email@example.com
 - `scrape_runs`：每次抓取的时间、来源和统计。
 - `matches`：比赛最新状态和完整原始数据。
 - `odds_snapshots`：每次抓取的赔率快照，便于以后画赔率变化。
-- `match_reports`：分析方向、预估 xG、分析比分 Top3 和完整报告。
+- `match_reports`：分析方向、泊松λ、分析比分 Top3 和完整报告。
 
 未配置 Supabase 时，网站继续使用 `data/current_matches.json`，适合开发阶段。

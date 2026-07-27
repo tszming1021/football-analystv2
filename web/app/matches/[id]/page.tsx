@@ -72,7 +72,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
       <section className="detail-grid">
         <OddsPanel title="胜平负" icon={<BarChart3 size={18} />} rows={nspf} />
         <OddsPanel title="让球胜平负" icon={<LineChart size={18} />} rows={spf} />
-        <XgPanel home={match.home} away={match.away} xg={analysis.xg} />
+        <PoissonPanel home={match.home} away={match.away} poisson={analysis.poisson} />
         <DeepPanel title="亚盘均值" market={match.deep_market?.yazhi} labels={["主水", "盘口", "客水"]} />
         <DeepPanel title="大小球均值" market={match.deep_market?.daxiao} labels={["大水", "盘口", "小水"]} />
         <ScorePanel values={analysis.scoreCandidates} />
@@ -137,35 +137,35 @@ function ScorePanel({ values }: { values: { label: string; odds?: number }[] }) 
   );
 }
 
-function XgPanel({
+function PoissonPanel({
   home,
   away,
-  xg
+  poisson
 }: {
   home: string;
   away: string;
-  xg: { home: number; away: number; total: number; note: string };
+  poisson: { home: number; away: number; total: number; note: string };
 }) {
   return (
     <div className="panel">
       <div className="panel-head">
         <Sigma size={18} />
-        <h2>预估 xG</h2>
+        <h2>泊松λ</h2>
       </div>
-      <div className="xg-grid">
-        <div className="xg-total">
-          <span>总 xG</span>
-          <strong>{xg.total.toFixed(2)}</strong>
+      <div className="lambda-grid">
+        <div className="lambda-total">
+          <span>总λ</span>
+          <strong>{poisson.total.toFixed(2)}</strong>
         </div>
-        <div className="xg-row">
+        <div className="lambda-row">
           <span>{home}</span>
-          <strong>{xg.home.toFixed(2)}</strong>
+          <strong>{poisson.home.toFixed(2)}</strong>
         </div>
-        <div className="xg-row">
+        <div className="lambda-row">
           <span>{away}</span>
-          <strong>{xg.away.toFixed(2)}</strong>
+          <strong>{poisson.away.toFixed(2)}</strong>
         </div>
-        <em>{xg.note}</em>
+        <em>{poisson.note}</em>
       </div>
     </div>
   );

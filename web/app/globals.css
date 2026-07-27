@@ -535,14 +535,14 @@ h1 span {
   padding: 14px;
 }
 
-.xg-grid {
+.lambda-grid {
   display: grid;
   gap: 10px;
   padding: 14px;
 }
 
-.xg-total,
-.xg-row {
+.lambda-total,
+.lambda-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -553,28 +553,28 @@ h1 span {
   padding: 10px 12px;
 }
 
-.xg-total {
+.lambda-total {
   background: #e5f3ed;
 }
 
-.xg-total span,
-.xg-row span,
-.xg-grid em {
+.lambda-total span,
+.lambda-row span,
+.lambda-grid em {
   color: var(--muted);
   font-size: 12px;
   font-weight: 780;
 }
 
-.xg-total strong {
+.lambda-total strong {
   color: var(--accent);
   font-size: 24px;
 }
 
-.xg-row strong {
+.lambda-row strong {
   font-size: 18px;
 }
 
-.xg-grid em {
+.lambda-grid em {
   font-style: normal;
 }
 

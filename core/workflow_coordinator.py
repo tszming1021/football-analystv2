@@ -7,6 +7,7 @@
 import os
 import sys
 import json
+import math
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, asdict
@@ -34,7 +35,6 @@ from core.probability_fusion import ProbabilityFusionCalibrator
 from core.leg_model import LEGModel
 from core.calibration_rules import MatchCalibrationFeatures, ProjectCalibrationRuleBook
 from core.model_consistency import ModelConsistencyChecker
-from core.xg_proxy_model import PreMatchXGProxyModel
 
 
 @dataclass
@@ -138,7 +138,7 @@ class WorkflowCoordinator:
         # 步骤2: 数学建模层 (Math Modeling Layer)
         # ============================================================
         print("\n" + "-" * 80)
-        print("🧮 步骤 2/4: 数学建模层 (泊松分布 + 风险系数)")
+        print("🧮 步骤 2/4: 数学建模层 (赔率主导 + Elo/泊松 + EV/凯利 + LEG)")
         print("-" * 80)
 
         math_modeling_results = {}
@@ -155,7 +155,6 @@ class WorkflowCoordinator:
         odds_movement = None
         llm_report = None
         fusion_report = None
-        xg_signal = None
 
         try:
             if not data_report.home_stats or not data_report.away_stats:
@@ -167,20 +166,21 @@ class WorkflowCoordinator:
 
             market_signal = MarketSignalModel.analyze(data_report)
             match_context = MatchContextModel.analyze(data_report)
-            xg_signal = PreMatchXGProxyModel.analyze(data_report, market_signal, match_context)
-            home_attack = xg_signal.home_xg
-            home_defense = xg_signal.home_xga
-            away_attack = xg_signal.away_xg
-            away_defense = xg_signal.away_xga
-            home_xg = max(0.2, xg_signal.home_xg)
-            away_xg = max(0.2, xg_signal.away_xg)
+            lambda_input = self._build_elo_poisson_lambdas(
+                data_report=data_report,
+                home_stats=home_model_stats,
+                away_stats=away_model_stats,
+                market_signal=market_signal,
+            )
+            home_lambda = lambda_input["home_lambda"]
+            away_lambda = lambda_input["away_lambda"]
             if match_context.competition_type == "international_friendly":
-                home_xg, away_xg = PoissonModel.friendly_lambda_adjustment(home_xg, away_xg)
+                home_lambda, away_lambda = PoissonModel.friendly_lambda_adjustment(home_lambda, away_lambda)
 
-            # Dixon-Coles低比分修正 + 国际赛零进球膨胀。
+            # 泊松低比分修正 + 国际赛零进球膨胀。
             base_poisson_probs = PoissonModel.calculate_match_probabilities(
-                home_lambda=home_xg,
-                away_lambda=away_xg,
+                home_lambda=home_lambda,
+                away_lambda=away_lambda,
                 max_goals=10,
                 low_score_rho=-0.08,
                 zero_inflation=0.08 if match_context.competition_type == "international_friendly" else 0.02,
@@ -197,7 +197,7 @@ class WorkflowCoordinator:
                 print("   使用主队主场/客队客场拆分数据")
             print(f"   主队预期进球: {poisson_probs.expected_home_goals:.2f}")
             print(f"   客队预期进球: {poisson_probs.expected_away_goals:.2f}")
-            print(f"   xG来源: {xg_signal.source} ({xg_signal.provider})")
+            print(f"   λ来源: {lambda_input['source']}")
             print(f"   主胜概率: {poisson_probs.home_win_prob:.1%}")
             print(f"   平局概率: {poisson_probs.draw_prob:.1%}")
             print(f"   客胜概率: {poisson_probs.away_win_prob:.1%}")
@@ -246,11 +246,11 @@ class WorkflowCoordinator:
                 'kelly': kelly_results,
                 'odds': odds,
                 'model_input': {
-                    'home_attack_avg': home_attack,
-                    'home_defense_avg': home_defense,
-                    'away_attack_avg': away_attack,
-                    'away_defense_avg': away_defense,
-                    'xg_signal': xg_signal.to_dict() if xg_signal else None,
+                    'home_attack_avg': lambda_input["home_attack_avg"],
+                    'home_defense_avg': lambda_input["home_defense_avg"],
+                    'away_attack_avg': lambda_input["away_attack_avg"],
+                    'away_defense_avg': lambda_input["away_defense_avg"],
+                    'lambda_input': lambda_input,
                     'season_used': data_report.season_used,
                     'home_away_split_used': split_model_used,
                     'competition_type': match_context.competition_type,
@@ -280,7 +280,6 @@ class WorkflowCoordinator:
                 handicap_signal=handicap_signal,
                 market_signal=market_signal,
                 context=match_context,
-                xg_signal=xg_signal,
             )
             leg_signal = LEGModel.analyze(
                 market_signal=market_signal,
@@ -317,7 +316,6 @@ class WorkflowCoordinator:
                 'goals_signal': goals_signal,
                 'scoreline_signal': scoreline_signal,
                 'leg_signal': leg_signal,
-                'xg_signal': xg_signal,
                 'calibration_report': calibration_report,
                 'consistency_report': consistency_report,
                 'decision': decision_result,
@@ -339,7 +337,6 @@ class WorkflowCoordinator:
                     "goals_signal": goals_signal.to_dict() if goals_signal else None,
                     "scoreline_signal": scoreline_signal.to_dict() if scoreline_signal else None,
                     "leg_signal": leg_signal.to_dict() if leg_signal else None,
-                    "xg_signal": xg_signal.to_dict() if xg_signal else None,
                     "calibration_report": calibration_report,
                     "consistency_report": consistency_report.to_dict() if consistency_report else None,
                     "decision": decision_result.to_dict() if decision_result else None,
@@ -373,17 +370,22 @@ class WorkflowCoordinator:
                     )
                 if data_report.data_completeness_score != before_score or verified_payload:
                     match_context = MatchContextModel.analyze(data_report)
-                    xg_signal = PreMatchXGProxyModel.analyze(data_report, market_signal, match_context)
-                    updated_home_xg = max(0.2, xg_signal.home_xg)
-                    updated_away_xg = max(0.2, xg_signal.away_xg)
+                    lambda_input = self._build_elo_poisson_lambdas(
+                        data_report=data_report,
+                        home_stats=home_model_stats,
+                        away_stats=away_model_stats,
+                        market_signal=market_signal,
+                    )
+                    updated_home_lambda = lambda_input["home_lambda"]
+                    updated_away_lambda = lambda_input["away_lambda"]
                     if match_context.competition_type == "international_friendly":
-                        updated_home_xg, updated_away_xg = PoissonModel.friendly_lambda_adjustment(
-                            updated_home_xg,
-                            updated_away_xg,
+                        updated_home_lambda, updated_away_lambda = PoissonModel.friendly_lambda_adjustment(
+                            updated_home_lambda,
+                            updated_away_lambda,
                         )
                     base_poisson_probs = PoissonModel.calculate_match_probabilities(
-                        home_lambda=updated_home_xg,
-                        away_lambda=updated_away_xg,
+                        home_lambda=updated_home_lambda,
+                        away_lambda=updated_away_lambda,
                         max_goals=10,
                         low_score_rho=-0.08,
                         zero_inflation=0.08 if match_context.competition_type == "international_friendly" else 0.02,
@@ -393,7 +395,6 @@ class WorkflowCoordinator:
                         data_report=data_report,
                         market_signal=market_signal,
                         context=match_context,
-                        xg_signal=xg_signal,
                     )
                     handicap_signal = HandicapCoverModel.analyze(poisson_probs, data_report, market_signal, match_context)
                     goals_signal = GoalsModel.analyze(poisson_probs, data_report, match_context, market_signal)
@@ -436,8 +437,7 @@ class WorkflowCoordinator:
                     math_modeling_results["match_context"] = match_context
                     math_modeling_results["poisson"] = poisson_probs
                     math_modeling_results["model_input"]["probability_fusion"] = fusion_report.to_dict() if fusion_report else None
-                    math_modeling_results["model_input"]["xg_signal"] = xg_signal.to_dict() if xg_signal else None
-                    math_modeling_results["xg_signal"] = xg_signal
+                    math_modeling_results["model_input"]["lambda_input"] = lambda_input
                     math_modeling_results["handicap_signal"] = handicap_signal
                     math_modeling_results["goals_signal"] = goals_signal
                     math_modeling_results["scoreline_signal"] = scoreline_signal
@@ -639,6 +639,127 @@ class WorkflowCoordinator:
         print(final_output.full_report_text)
 
         return final_output
+
+    def _build_elo_poisson_lambdas(
+        self,
+        data_report: CompleteDataReport,
+        home_stats: Any,
+        away_stats: Any,
+        market_signal: Any,
+    ) -> Dict[str, Any]:
+        home_attack = self._per_match(getattr(home_stats, "goals_for", None), getattr(home_stats, "matches_played", None), 1.25)
+        home_defense = self._per_match(getattr(home_stats, "goals_against", None), getattr(home_stats, "matches_played", None), 1.25)
+        away_attack = self._per_match(getattr(away_stats, "goals_for", None), getattr(away_stats, "matches_played", None), 1.15)
+        away_defense = self._per_match(getattr(away_stats, "goals_against", None), getattr(away_stats, "matches_played", None), 1.25)
+
+        home_lambda = max(0.20, (0.62 * home_attack + 0.38 * away_defense) * 1.08)
+        away_lambda = max(0.20, (0.62 * away_attack + 0.38 * home_defense) * 0.94)
+
+        home_elo, away_elo = self._clubelo_pair(data_report)
+        elo_adjustment = 1.0
+        if home_elo is not None and away_elo is not None:
+            elo_adjustment = self._clamp_range(math.exp((home_elo - away_elo) / 1100.0), 0.84, 1.18)
+            home_lambda *= elo_adjustment
+            away_lambda /= elo_adjustment
+
+        raw_total = max(0.40, home_lambda + away_lambda)
+        market_total = self._market_total_goal_mean(data_report)
+        total_after_market = raw_total
+        if market_total is not None:
+            total_after_market = 0.55 * raw_total + 0.45 * market_total
+
+        home_share = self._clamp_range(home_lambda / raw_total, 0.24, 0.76)
+        implied_home = self._safe_float(getattr(market_signal, "implied_home", None)) if market_signal else None
+        implied_away = self._safe_float(getattr(market_signal, "implied_away", None)) if market_signal else None
+        if implied_home is not None and implied_away is not None:
+            home_share = self._clamp_range(home_share + 0.18 * (implied_home - implied_away), 0.22, 0.78)
+
+        home_lambda = max(0.20, total_after_market * home_share)
+        away_lambda = max(0.20, total_after_market * (1.0 - home_share))
+        source_parts = ["历史进失球"]
+        if home_elo is not None and away_elo is not None:
+            source_parts.append("ClubElo温和修正")
+        if market_total is not None or (implied_home is not None and implied_away is not None):
+            source_parts.append("赔率去水/总球盘校准")
+
+        return {
+            "home_lambda": round(home_lambda, 4),
+            "away_lambda": round(away_lambda, 4),
+            "home_attack_avg": round(home_attack, 4),
+            "home_defense_avg": round(home_defense, 4),
+            "away_attack_avg": round(away_attack, 4),
+            "away_defense_avg": round(away_defense, 4),
+            "home_clubelo": home_elo,
+            "away_clubelo": away_elo,
+            "elo_adjustment": round(elo_adjustment, 4),
+            "raw_total_goals": round(raw_total, 4),
+            "market_total_goals": round(market_total, 4) if market_total is not None else None,
+            "source": " + ".join(source_parts),
+        }
+
+    @staticmethod
+    def _per_match(total: Any, matches: Any, fallback: float) -> float:
+        try:
+            total_value = float(total)
+            match_count = float(matches)
+            if match_count > 0:
+                return max(0.05, total_value / match_count)
+        except (TypeError, ValueError):
+            pass
+        return fallback
+
+    @staticmethod
+    def _clubelo_pair(data_report: CompleteDataReport) -> Tuple[Optional[float], Optional[float]]:
+        intelligence = data_report.match_intelligence or {}
+        home = intelligence.get("home") or {}
+        away = intelligence.get("away") or {}
+        return (
+            WorkflowCoordinator._safe_float(home.get("clubelo_rating")),
+            WorkflowCoordinator._safe_float(away.get("clubelo_rating")),
+        )
+
+    @staticmethod
+    def _market_total_goal_mean(data_report: CompleteDataReport) -> Optional[float]:
+        jingcai = data_report.jingcai_match or {}
+        mixed = jingcai.get("mixed_market") or {}
+        candidates = [
+            mixed.get("total_goals_odds"),
+            jingcai.get("total_goals_odds"),
+            (jingcai.get("goals_market") or {}).get("total_goals_odds"),
+        ]
+        odds = next((item for item in candidates if isinstance(item, dict) and item), None)
+        if not odds:
+            return None
+        weighted = 0.0
+        total_prob = 0.0
+        for key, value in odds.items():
+            decimal = WorkflowCoordinator._safe_float(value)
+            goal_value = WorkflowCoordinator._goal_bucket_value(key)
+            if decimal is None or decimal <= 1.0 or goal_value is None:
+                continue
+            implied = 1.0 / decimal
+            weighted += goal_value * implied
+            total_prob += implied
+        if total_prob <= 0:
+            return None
+        return weighted / total_prob
+
+    @staticmethod
+    def _goal_bucket_value(key: Any) -> Optional[float]:
+        text = str(key).strip().lower().replace("球", "")
+        if text in {"7+", "7_plus", "7 plus", "7及以上"}:
+            return 7.5
+        digits = "".join(ch for ch in text if ch.isdigit() or ch == ".")
+        if not digits:
+            return None
+        try:
+            return float(digits)
+        except ValueError:
+            return None
+
+    @staticmethod
+    def _clamp_range(value: float, low: float, high: float) -> float:
+        return max(low, min(high, value))
 
     def _calibration_features(
         self,

@@ -15,7 +15,6 @@ from core.math_models import PoissonModel
 from core.model_consistency import ModelConsistencyChecker
 from core.qimen_assistant import QimenAssistant
 from core.worldcup_trained_model import WorldCupTrainedModel
-from core.xg_proxy_model import PreMatchXGProxyModel
 
 
 OUT_PATH = Path("data/worldcup_20260621/model_analysis.json")
@@ -301,7 +300,16 @@ def exact_mean(distribution: dict[str, float]) -> float:
 
 def make_stats(values: tuple[int, int, int]) -> SimpleNamespace:
     matches, goals_for, goals_against = values
-    return SimpleNamespace(matches_played=matches, goals_for=goals_for, goals_against=goals_against, xg=None, xga=None)
+    return SimpleNamespace(matches_played=matches, goals_for=goals_for, goals_against=goals_against)
+
+
+def market_lambdas(one_x_two, total_market) -> tuple[float, float]:
+    total = exact_mean(total_market.probabilities)
+    home = one_x_two.probabilities.get("home") or 0.33
+    away = one_x_two.probabilities.get("away") or 0.33
+    share = home / max(0.01, home + away)
+    share = min(0.78, max(0.22, share))
+    return max(0.15, total * share), max(0.15, total * (1 - share))
 
 
 def map_favorite_handicap(home_settlement: dict[str, float], favorite: str) -> dict[str, float]:
@@ -344,19 +352,14 @@ def analyze_match(match: dict, trained: WorldCupTrainedModel) -> dict:
         match_intelligence={"home": {"injuries": []}, "away": {"injuries": []}},
         weather_context={"text": match["weather"]},
     )
-    market_signal_for_xg = SimpleNamespace(
-        implied_home=one_x_two.probabilities["home"],
-        implied_away=one_x_two.probabilities["away"],
-    )
-    context_for_xg = SimpleNamespace(competition_type="world_cup", friendly_subtype="", tags=match["tags"], warnings=[])
-    proxy_xg = PreMatchXGProxyModel.analyze(report, market_signal_for_xg, context_for_xg)
+    market_lambda = market_lambdas(one_x_two, total_market)
     historical_lambda = trained.lambdas(match["home_en"], match["away_en"], neutral=True)
     if historical_lambda is None:
-        historical_lambda = (proxy_xg.home_xg, proxy_xg.away_xg)
+        historical_lambda = market_lambda
     weight = match["proxy_weight"]
     independent_lambda = (
-        weight * proxy_xg.home_xg + (1 - weight) * historical_lambda[0],
-        weight * proxy_xg.away_xg + (1 - weight) * historical_lambda[1],
+        weight * market_lambda[0] + (1 - weight) * historical_lambda[0],
+        weight * market_lambda[1] + (1 - weight) * historical_lambda[1],
     )
     final_lambda = (
         max(0.15, independent_lambda[0] + match["lambda_context"][0]),
@@ -435,7 +438,7 @@ def analyze_match(match: dict, trained: WorldCupTrainedModel) -> dict:
         high_scoring_risk=match["high_scoring_risk"],
         favorite_cover_trigger=match["favorite_cover_trigger"],
     )
-    leg = LEGModel.analyze(market_signal, favorite_handicap_signal, goals_signal, scoreline_signal, game_context, proxy_xg)
+    leg = LEGModel.analyze(market_signal, favorite_handicap_signal, goals_signal, scoreline_signal, game_context)
 
     qimen = QimenAssistant().analyze(
         datetime.fromisoformat(match["kickoff"]),
@@ -531,8 +534,8 @@ def analyze_match(match: dict, trained: WorldCupTrainedModel) -> dict:
             "asian_average_line": match["asian_line"],
             "total_average_line": match["market_total_line"],
         },
-        "xg": {
-            "proxy": proxy_xg.to_dict(),
+        "lambda_input": {
+            "market_lambda": {"home": round(market_lambda[0], 4), "away": round(market_lambda[1], 4)},
             "historical_lambda": {"home": round(historical_lambda[0], 4), "away": round(historical_lambda[1], 4)},
             "independent_lambda": {"home": round(independent_lambda[0], 4), "away": round(independent_lambda[1], 4)},
             "context_adjustment": {"home": match["lambda_context"][0], "away": match["lambda_context"][1]},
@@ -545,7 +548,7 @@ def analyze_match(match: dict, trained: WorldCupTrainedModel) -> dict:
         },
         "means": {
             "historical_independent": round(sum(historical_lambda), 3),
-            "proxy": round(proxy_xg.total_xg, 3),
+            "market_lambda": round(sum(market_lambda), 3),
             "poisson_contextual": round(sum(final_lambda), 3),
             "market_exact": round(exact_mean(total_market.probabilities), 3),
             "final_fused": round(exact_mean(total_fusion.posterior_probabilities), 3),
@@ -573,7 +576,7 @@ def main() -> None:
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "model_version": "worldcup-strict-20260620-v1",
         "notes": [
-            "真实赛前xG/xGA不可用，全部使用项目proxy xG并与离线世界杯历史模型融合。",
+            "分析层已改为赔率λ与离线世界杯历史模型融合，不再计算或使用xG。",
             "API-Football预测端点只有单场小样本，其负数goals字段视为异常，不输入模型。",
             "三向、让球三向、总进球均先去水，再与模型先验进行贝叶斯融合。",
         ],

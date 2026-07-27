@@ -46,7 +46,7 @@ class StandardReportRenderer:
         goals_signal = StandardReportRenderer._as_dict(math_results.get("goals_signal"))
         scoreline_signal = StandardReportRenderer._as_dict(math_results.get("scoreline_signal"))
         leg_signal = StandardReportRenderer._as_dict(math_results.get("leg_signal"))
-        xg_signal = StandardReportRenderer._as_dict(math_results.get("xg_signal") or (math_results.get("model_input") or {}).get("xg_signal"))
+        lambda_input = StandardReportRenderer._as_dict((math_results.get("model_input") or {}).get("lambda_input"))
         calibration = StandardReportRenderer._as_dict(math_results.get("calibration_report"))
         consistency = StandardReportRenderer._as_dict(math_results.get("consistency_report"))
         decision = StandardReportRenderer._as_dict(math_results.get("decision"))
@@ -181,7 +181,7 @@ class StandardReportRenderer:
             f"| **亚盘/竞彩让球** | {market_signal.get('asian_handicap', '-')} / {market_signal.get('handicap', '-')} | {market_signal.get('pressure_side', '-')} |",
             f"| **市场数字变化方向** | {odds_movement.get('market_bias', '-')} | {odds_movement.get('strongest_move') or odds_movement.get('clv_note', '-')} |",
             f"| **比赛语境** | {match_context.get('competition_type', '-')} | {match_context.get('motivation_note', '-')} |",
-            f"| **xG/xGA源** | {StandardReportRenderer._xg_source_label(xg_signal)} | 主队xG {StandardReportRenderer._num(xg_signal.get('home_xg'))} / 客队xG {StandardReportRenderer._num(xg_signal.get('away_xg'))}；xG差 {StandardReportRenderer._num(xg_signal.get('xg_edge'))}；xGA差 {StandardReportRenderer._num(xg_signal.get('xga_edge'))} |",
+            f"| **泊松λ来源** | {lambda_input.get('source', '-')} | 主队λ {StandardReportRenderer._num(lambda_input.get('home_lambda'))} / 客队λ {StandardReportRenderer._num(lambda_input.get('away_lambda'))}；Elo修正 {StandardReportRenderer._num(lambda_input.get('elo_adjustment'))}；赔率总球 {StandardReportRenderer._num(lambda_input.get('market_total_goals'))} |",
             f"| **友谊赛子类型** | {match_context.get('friendly_subtype', '-')} | 战意 {StandardReportRenderer._pct(match_context.get('motivation_score'))} / 客队脆弱 {StandardReportRenderer._pct(match_context.get('away_vulnerability_score'))} |",
             f"| **高总球/打穿触发** | 高总球风险 {StandardReportRenderer._pct(match_context.get('high_scoring_risk'))} | 强队打穿触发: {'是' if match_context.get('favorite_cover_trigger') else '否'} |",
             f"| **波动等级** | {match_context.get('volatility_score', '-')} | {'、'.join(match_context.get('tags') or []) or '-'} |",
@@ -1098,19 +1098,6 @@ class StandardReportRenderer:
         ]
 
     @staticmethod
-    def _xg_source_label(xg_signal: Dict[str, Any]) -> str:
-        if not xg_signal:
-            return "未生成"
-        source = xg_signal.get("source")
-        provider = xg_signal.get("provider") or "-"
-        confidence = xg_signal.get("confidence") or "-"
-        if source == "api_actual":
-            return f"真实xG ({provider})，信心 {confidence}"
-        if source == "proxy_calculated":
-            return f"赛前proxy xG，信心 {confidence}"
-        return f"{source or '-'} ({provider})"
-
-    @staticmethod
     def _leg_depth_rows(leg_signal: Dict[str, Any], home: str, away: str) -> List[str]:
         if not leg_signal:
             return ["| - | - | - | 未生成LEG强弱深度量化 |"]
@@ -1127,10 +1114,10 @@ class StandardReportRenderer:
                 "市场深度、让球结算和分歧综合量化 |"
             ),
             (
-                "| **E xG创造力分** | "
-                f"{StandardReportRenderer._num(leg_signal.get('home_xg_score_10'))}/10 | "
-                f"{StandardReportRenderer._num(leg_signal.get('away_xg_score_10'))}/10 | "
-                "真实/proxy xG、xGA与总球空间综合量化 |"
+                "| **E 预期进球分** | "
+                f"{StandardReportRenderer._num(leg_signal.get('home_expected_goal_score_10'))}/10 | "
+                f"{StandardReportRenderer._num(leg_signal.get('away_expected_goal_score_10'))}/10 | "
+                "赔率总球、泊松进球期望与比分空间综合量化 |"
             ),
             (
                 "| **G 比赛语境分** | "
@@ -1147,7 +1134,7 @@ class StandardReportRenderer:
                 "| **LEG修正预期进球** | "
                 f"**{StandardReportRenderer._num(leg_signal.get('home_leg_expected_goals'))}** | "
                 f"**{StandardReportRenderer._num(leg_signal.get('away_leg_expected_goals'))}** | "
-                "由xG/proxy xG叠加L/E/G深度后得到，用于解释比分Top和总球 |"
+                "由赔率总球、泊松λ与L/E/G深度后得到，用于解释比分Top和总球 |"
             ),
         ]
         return rows

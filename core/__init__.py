@@ -143,11 +143,6 @@ from core.worldcup_trained_model import (
     WorldCupTrainedModel,
 )
 
-from core.xg_proxy_model import (
-    PreMatchXGProxyModel,
-    XGSignal,
-)
-
 __version__ = '5.1.0'
 __author__ = 'AI Assistant'
 
@@ -219,9 +214,6 @@ __all__ = [
     'WorldCupModelArtifact',
     'WorldCupOfflineTrainer',
     'WorldCupTrainedModel',
-    'PreMatchXGProxyModel',
-    'XGSignal',
-
     # 数学模型
     'PoissonProbabilities',
     'KellyResult',

@@ -33,9 +33,9 @@ class ProbabilityFusionCalibrator:
     }
 
     FRIENDLY_GOAL_SHRINK = 0.88
-    FRIENDLY_STRONG_XG_CAP = 2.80
-    FRIENDLY_STRONG_XG_CAP_WITH_MARKET = 3.05
-    FINAL_WARMUP_STRONG_XG_CAP = 3.35
+    FRIENDLY_STRONG_LAMBDA_CAP = 2.80
+    FRIENDLY_STRONG_LAMBDA_CAP_WITH_MARKET = 3.05
+    FINAL_WARMUP_STRONG_LAMBDA_CAP = 3.35
 
     def __init__(
         self,
@@ -184,13 +184,13 @@ class ProbabilityFusionCalibrator:
         if not self._is_international_friendly(context):
             return home_lambda, away_lambda
 
-        cap = self.FRIENDLY_STRONG_XG_CAP
+        cap = self.FRIENDLY_STRONG_LAMBDA_CAP
         shrink = self.FRIENDLY_GOAL_SHRINK
         if getattr(context, "friendly_subtype", "") == "world_cup_final_warmup" and getattr(context, "favorite_cover_trigger", False):
-            cap = self.FINAL_WARMUP_STRONG_XG_CAP
+            cap = self.FINAL_WARMUP_STRONG_LAMBDA_CAP
             shrink = 0.96
         if getattr(market_signal, "market_strength", "") in {"strong_home_deep_handicap", "strong_away_deep_handicap"}:
-            cap = max(cap, self.FRIENDLY_STRONG_XG_CAP_WITH_MARKET)
+            cap = max(cap, self.FRIENDLY_STRONG_LAMBDA_CAP_WITH_MARKET)
         total = home_lambda + away_lambda
         if total > 0:
             home_lambda *= shrink
