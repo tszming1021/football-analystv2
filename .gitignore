@@ -26,7 +26,6 @@ dist/
 *~
 
 # Local project memory (kept on the workstation, not published)
-CURRENT_CONTEXT.md
 PROJECT_CONTEXT.md
 CONTEXT_HANDOFF.md
 CONTEXT_SNAPSHOT*.md
@@ -58,4 +57,3 @@ data/calibration/*
 *.wav
 *.mp4
 *.mov
-
